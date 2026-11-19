@@ -3,6 +3,7 @@ import {
   buildWhatsAppUrl,
   filterProducts,
   getProductImageCandidates,
+  parseProductSpecifications,
   PRODUCTS,
   validateProduct,
 } from './products.js';
@@ -151,6 +152,44 @@ describe('validateProduct', () => {
     expect(validateProduct({ ...validInput, nama: ' ' }).errors).toHaveProperty('nama');
     expect(validateProduct({ ...validInput, nama: 'x'.repeat(81) }).errors)
       .toHaveProperty('nama');
+  });
+
+  it('accepts structured product specifications and rejects malformed entries', () => {
+    expect(
+      validateProduct({
+        ...validInput,
+        spesifikasi: [{ nama: 'Layout', nilai: '65%' }],
+      }).valid,
+    ).toBe(true);
+    expect(
+      validateProduct({
+        ...validInput,
+        spesifikasi: [{ nama: 'Layout', nilai: '' }],
+      }).errors,
+    ).toHaveProperty('spesifikasi');
+  });
+});
+
+describe('parseProductSpecifications', () => {
+  it('parses trimmed name-value lines while preserving colons in values', () => {
+    expect(parseProductSpecifications(' Layout: 65% \nKonektor: USB-C: detachable')).toEqual({
+      valid: true,
+      specifications: [
+        { nama: 'Layout', nilai: '65%' },
+        { nama: 'Konektor', nilai: 'USB-C: detachable' },
+      ],
+      error: null,
+    });
+  });
+
+  it('rejects malformed, duplicate, and over-limit specifications', () => {
+    expect(parseProductSpecifications('Layout 65%').valid).toBe(false);
+    expect(parseProductSpecifications('Layout: 65%\nlayout: 75%').valid).toBe(false);
+    expect(
+      parseProductSpecifications(
+        Array.from({ length: 9 }, (_, index) => `Fitur ${index}: Ada`).join('\n'),
+      ).valid,
+    ).toBe(false);
   });
 });
 

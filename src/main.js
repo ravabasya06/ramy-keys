@@ -23,6 +23,7 @@ const initialWishlist = loadProductIdList(WISHLIST_STORAGE_KEY, productIds);
 const initialComparison = loadProductIdList(COMPARISON_STORAGE_KEY, productIds);
 let wishlistIds = initialWishlist.ids;
 let comparisonIds = initialComparison.ids;
+let setupIds = [];
 let catalogFilters = {
   search: '',
   category: 'all',
@@ -48,6 +49,7 @@ const STATIC_ROUTES = new Map([
   ['#/tentang', 'about'],
   ['#/wishlist', 'wishlist'],
   ['#/perbandingan', 'comparison'],
+  ['#/setup', 'setup'],
 ]);
 
 function currentRoute() {
@@ -75,6 +77,7 @@ function render(nextNotice) {
     products,
     wishlistIds,
     comparisonIds,
+    setupIds,
     catalogFilters,
     notice,
     onDismissNotice() {
@@ -95,6 +98,9 @@ function render(nextNotice) {
       const result = saveProductIdList(COMPARISON_STORAGE_KEY, nextIds);
       if (result.ok) comparisonIds = nextIds;
       return result;
+    },
+    onSetupChange(nextIds) {
+      setupIds = nextIds;
     },
     onCatalogFiltersChange(nextFilters) {
       catalogFilters = { ...nextFilters };

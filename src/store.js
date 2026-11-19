@@ -8,22 +8,30 @@ import { PRODUCTS, STORAGE_KEY, validateProduct } from './products.js';
 const CORRUPT_DATA_NOTICE = 'Data tersimpan rusak, data contoh dimuat ulang.';
 export const WISHLIST_STORAGE_KEY = 'ramykeys:wishlist:v1';
 export const COMPARISON_STORAGE_KEY = 'ramykeys:comparison:v1';
+export const WISHLIST_EXPORT_FORMAT = 'ramykeys-wishlist';
 
 function cloneProducts(products) {
   return products.map((product) => ({ ...product }));
 }
 
 function normalizeProducts(products) {
-  return products.map((product) => ({
-    id: product.id,
-    nama: product.nama,
-    kategori: product.kategori,
-    harga: product.harga,
-    stok: product.stok,
-    deskripsi: product.deskripsi ?? '',
-    imageUrl: product.imageUrl ?? '',
-    unggulan: product.unggulan,
-  }));
+  return products.map((product) => {
+    const sampleProduct = PRODUCTS.find(
+      (sample) => sample.id === product.id && sample.nama === product.nama,
+    );
+    const specifications = product.spesifikasi ?? sampleProduct?.spesifikasi ?? [];
+    return {
+      id: product.id,
+      nama: product.nama,
+      kategori: product.kategori,
+      harga: product.harga,
+      stok: product.stok,
+      deskripsi: product.deskripsi ?? '',
+      spesifikasi: specifications.map((item) => ({ ...item })),
+      imageUrl: product.imageUrl ?? '',
+      unggulan: product.unggulan,
+    };
+  });
 }
 
 export function loadProductIdList(key, validProductIds) {
@@ -100,6 +108,8 @@ export function validateProducts(products) {
       typeof product.stok === 'number' &&
       (!Object.prototype.hasOwnProperty.call(product, 'deskripsi') ||
         typeof product.deskripsi === 'string') &&
+      (!Object.prototype.hasOwnProperty.call(product, 'spesifikasi') ||
+        Array.isArray(product.spesifikasi)) &&
       (!Object.prototype.hasOwnProperty.call(product, 'imageUrl') ||
         typeof product.imageUrl === 'string') &&
       typeof product.unggulan === 'boolean';
@@ -207,6 +217,51 @@ export function parseProductsJson(raw) {
   }
 
   return { ok: true, products: normalizeProducts(parsed) };
+}
+
+export function parseWishlistJson(raw, validProductIds) {
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: 'File Wishlist bukan JSON yang valid.' };
+  }
+
+  if (
+    parsed === null ||
+    typeof parsed !== 'object' ||
+    Array.isArray(parsed) ||
+    parsed.format !== WISHLIST_EXPORT_FORMAT ||
+    parsed.version !== 1 ||
+    !Array.isArray(parsed.productIds) ||
+    parsed.productIds.some((id) => typeof id !== 'string' || !id.trim())
+  ) {
+    return { ok: false, error: 'Format file Wishlist tidak didukung atau rusak.' };
+  }
+
+  const ids = [...new Set(parsed.productIds)].filter((id) =>
+    validProductIds.has(id),
+  );
+  return { ok: true, ids };
+}
+
+export function serializeWishlistJson(ids) {
+  if (
+    !Array.isArray(ids) ||
+    ids.some((id) => typeof id !== 'string' || !id.trim())
+  ) {
+    throw new TypeError('Wishlist harus berisi ID produk yang valid.');
+  }
+
+  return JSON.stringify(
+    {
+      format: WISHLIST_EXPORT_FORMAT,
+      version: 1,
+      productIds: [...new Set(ids)],
+    },
+    null,
+    2,
+  );
 }
 
 export function summarize(products) {

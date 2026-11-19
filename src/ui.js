@@ -9,11 +9,17 @@ import {
   filterProducts,
   getProductImageCandidates,
   LOW_STOCK,
+  parseProductSpecifications,
   PRODUCTS,
   WA_NUMBER,
   validateProduct,
 } from './products.js';
-import { parseProductsJson, summarize } from './store.js';
+import {
+  parseProductsJson,
+  parseWishlistJson,
+  serializeWishlistJson,
+  summarize,
+} from './store.js';
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -22,6 +28,12 @@ const currencyFormatter = new Intl.NumberFormat('id-ID', {
 });
 
 const MAX_COMPARISON_PRODUCTS = 3;
+const SETUP_GROUPS = [
+  { id: 'keyboard', title: 'Keyboard', categories: ['Keyboard Kit', 'Prebuilt Keyboard'] },
+  { id: 'switch', title: 'Switch', categories: ['Switch'] },
+  { id: 'keycaps', title: 'Keycaps', categories: ['Keycaps'] },
+  { id: 'accessory', title: 'Aksesori', categories: ['Aksesori'] },
+];
 
 const INFO_PAGES = {
   guide: {
@@ -163,6 +175,7 @@ function renderPageMenu(page, wishlistCount, comparisonCount) {
     { page: 'guide', label: 'Panduan', href: '#/panduan' },
     { page: 'faq', label: 'FAQ', href: '#/faq' },
     { page: 'about', label: 'Tentang', href: '#/tentang' },
+    { page: 'setup', label: 'Perakit setup', href: '#/setup' },
     {
       page: 'wishlist',
       label: `Wishlist (${wishlistCount})`,
@@ -456,6 +469,21 @@ function createProductCard(product, state) {
   return card;
 }
 
+function renderSpecificationList(specifications, className) {
+  if (!specifications?.length) return null;
+
+  const list = el('dl', `${className} spec-list`);
+  for (const specification of specifications) {
+    const item = el('div', 'spec-list__item');
+    item.append(
+      el('dt', 'spec-list__name', specification.nama),
+      el('dd', 'spec-list__value', specification.nilai),
+    );
+    list.append(item);
+  }
+  return list;
+}
+
 function renderProductDetail(product, allProducts, state) {
   const section = el('section', 'product-detail container');
   const backLink = el('a', 'product-detail__back');
@@ -515,6 +543,18 @@ function renderProductDetail(product, allProducts, state) {
     facts.append(fact);
   }
   content.append(facts, el('p', stockClass, stockText));
+  const specifications = renderSpecificationList(
+    product.spesifikasi,
+    'product-detail__specs',
+  );
+  if (specifications) {
+    const specificationsSection = el('section', 'product-detail__specifications');
+    specificationsSection.append(
+      el('h2', 'product-detail__specifications-title', 'Spesifikasi'),
+      specifications,
+    );
+    content.append(specificationsSection);
+  }
 
   const actions = el('div', 'product-detail__actions');
   actions.append(
@@ -677,10 +717,74 @@ function renderCatalog(products, state) {
   const status = el('p', 'section__meta catalog-results__status');
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
+  const activeFilters = el('div', 'catalog-active-filters');
+  activeFilters.hidden = true;
   const results = el('div', 'catalog-results');
+
+  function syncFilterControls() {
+    searchInput.value = filters.search;
+    categorySelect.value = filters.category;
+    stockSelect.value = filters.stock;
+    sortSelect.value = filters.sort;
+    minPriceInput.value = filters.minPrice;
+    maxPriceInput.value = filters.maxPrice;
+    featuredSelect.value = filters.featured ? 'featured' : 'all';
+  }
+
+  function updateActiveFilters() {
+    const active = [];
+    if (filters.search.trim()) active.push(['search', `Cari: ${filters.search.trim()}`]);
+    if (filters.category !== 'all') active.push(['category', `Kategori: ${filters.category}`]);
+    if (filters.stock !== 'all') {
+      active.push([
+        'stock',
+        `Stok: ${filters.stock === 'available' ? 'Tersedia' : 'Habis'}`,
+      ]);
+    }
+    if (filters.sort !== 'default') {
+      const sortLabels = {
+        'price-asc': 'Harga termurah',
+        'price-desc': 'Harga termahal',
+        'name-asc': 'Nama A–Z',
+      };
+      active.push(['sort', `Urutan: ${sortLabels[filters.sort] || filters.sort}`]);
+    }
+    if (filters.minPrice !== '') {
+      active.push(['minPrice', `Harga min: ${formatRupiah(Number(filters.minPrice))}`]);
+    }
+    if (filters.maxPrice !== '') {
+      active.push(['maxPrice', `Harga maks: ${formatRupiah(Number(filters.maxPrice))}`]);
+    }
+    if (filters.featured) active.push(['featured', 'Produk unggulan']);
+
+    activeFilters.replaceChildren();
+    activeFilters.hidden = active.length === 0;
+    for (const [key, label] of active) {
+      const chip = el('button', 'catalog-filter-chip', label);
+      chip.type = 'button';
+      chip.setAttribute('aria-label', `Hapus filter ${label}`);
+      chip.append(faIcon('fa-solid fa-xmark'));
+      chip.addEventListener('click', () => {
+        const defaults = {
+          search: '',
+          category: 'all',
+          stock: 'all',
+          sort: 'default',
+          minPrice: '',
+          maxPrice: '',
+          featured: false,
+        };
+        filters[key] = defaults[key];
+        syncFilterControls();
+        updateResults();
+      });
+      activeFilters.append(chip);
+    }
+  }
 
   function updateResults() {
     state.onCatalogFiltersChange(filters);
+    updateActiveFilters();
     const visibleProducts = filterProducts(products, filters);
     status.textContent = `Menampilkan ${visibleProducts.length} dari ${products.length} produk`;
     results.replaceChildren();
@@ -740,13 +844,7 @@ function renderCatalog(products, state) {
       maxPrice: '',
       featured: false,
     });
-    searchInput.value = '';
-    categorySelect.value = 'all';
-    stockSelect.value = 'all';
-    sortSelect.value = 'default';
-    minPriceInput.value = '';
-    maxPriceInput.value = '';
-    featuredSelect.value = 'all';
+    syncFilterControls();
     updateResults();
   });
 
@@ -754,6 +852,7 @@ function renderCatalog(products, state) {
     head,
     toolbar,
     renderCategoryOverview(products),
+    activeFilters,
     status,
     results,
   );
@@ -775,6 +874,96 @@ function renderWishlistPage(products, state) {
       `${savedProducts.length} produk tersimpan. Wishlist hanya tersedia di browser ini.`,
     ),
   );
+  const actions = el('div', 'wishlist-actions');
+  const exportButton = el('button', 'btn btn--secondary');
+  appendIconLabel(exportButton, 'fa-solid fa-file-export', 'Ekspor Wishlist');
+  exportButton.type = 'button';
+  exportButton.disabled = savedProducts.length === 0;
+  exportButton.addEventListener('click', () => {
+    try {
+      const blob = new Blob(
+        [serializeWishlistJson(savedProducts.map((product) => product.id))],
+        {
+          type: 'application/json',
+        },
+      );
+      const objectUrl = URL.createObjectURL(blob);
+      const downloadLink = el('a');
+      downloadLink.href = objectUrl;
+      downloadLink.download = 'ramykeys-wishlist.json';
+      document.body.append(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      state.onRefresh({
+        message: 'Wishlist diekspor sebagai file JSON.',
+        type: 'success',
+      });
+    } catch {
+      state.onRefresh({
+        message: 'Gagal mengekspor Wishlist.',
+        type: 'error',
+      });
+    }
+  });
+
+  const importInput = el('input');
+  importInput.type = 'file';
+  importInput.accept = '.json,application/json';
+  importInput.hidden = true;
+  importInput.addEventListener('change', async () => {
+    const [file] = importInput.files || [];
+    if (!file) return;
+    if (file.size > 256 * 1024) {
+      importInput.value = '';
+      state.onRefresh({
+        message: 'File Wishlist terlalu besar (maksimal 256 KB).',
+        type: 'error',
+      });
+      return;
+    }
+
+    let raw;
+    try {
+      raw = await file.text();
+    } catch {
+      importInput.value = '';
+      state.onRefresh({
+        message: 'File Wishlist tidak dapat dibaca.',
+        type: 'error',
+      });
+      return;
+    }
+
+    const validProductIds = new Set(products.map((product) => product.id));
+    const imported = parseWishlistJson(raw, validProductIds);
+    importInput.value = '';
+    if (!imported.ok) {
+      state.onRefresh({ message: imported.error, type: 'error' });
+      return;
+    }
+
+    const nextIds = [...new Set([...state.wishlistIds, ...imported.ids])];
+    const result = state.onWishlistChange(nextIds);
+    if (!result.ok) {
+      state.onRefresh({
+        message: 'Wishlist gagal disimpan di browser.',
+        type: 'error',
+      });
+      return;
+    }
+    state.onRefresh({
+      message: `${imported.ids.length} produk Wishlist berhasil digabungkan.`,
+      type: 'success',
+    });
+  });
+
+  const importButton = el('button', 'btn btn--secondary');
+  appendIconLabel(importButton, 'fa-solid fa-file-import', 'Impor Wishlist');
+  importButton.type = 'button';
+  importButton.addEventListener('click', () => importInput.click());
+  actions.append(exportButton, importButton, importInput);
+  section.append(actions);
 
   if (savedProducts.length === 0) {
     const empty = el('div', 'empty-state');
@@ -907,6 +1096,165 @@ function renderComparisonPage(products, state) {
     grid.append(card);
   }
   section.append(actions, grid);
+
+  const specificationNames = [
+    ...new Set(
+      selectedProducts.flatMap((product) =>
+        (product.spesifikasi || []).map((specification) => specification.nama),
+      ),
+    ),
+  ];
+  if (specificationNames.length > 0) {
+    const tableWrap = el('div', 'comparison-table-wrap');
+    const table = el('table', 'comparison-table');
+    table.append(
+      el('caption', 'visually-hidden', 'Perbandingan spesifikasi produk'),
+    );
+    const head = el('thead');
+    const headerRow = el('tr');
+    const attributeHeading = el('th', null, 'Spesifikasi');
+    attributeHeading.scope = 'col';
+    headerRow.append(attributeHeading);
+    for (const product of selectedProducts) {
+      const heading = el('th', null, product.nama);
+      heading.scope = 'col';
+      headerRow.append(heading);
+    }
+    head.append(headerRow);
+    const body = el('tbody');
+    for (const name of specificationNames) {
+      const row = el('tr');
+      const label = el('th', null, name);
+      label.scope = 'row';
+      row.append(label);
+      for (const product of selectedProducts) {
+        const specification = (product.spesifikasi || []).find(
+          (item) => item.nama === name,
+        );
+        row.append(el('td', null, specification?.nilai || '—'));
+      }
+      body.append(row);
+    }
+    table.append(head, body);
+    tableWrap.append(table);
+    section.append(
+      el('h2', 'comparison-table-title', 'Spesifikasi berdampingan'),
+      tableWrap,
+    );
+  }
+  return section;
+}
+
+function renderSetupPage(products, state) {
+  const section = el('section', 'setup-page container');
+  section.append(
+    el('p', 'page-eyebrow', 'RANCANGAN SEMENTARA'),
+    el('h1', 'page-title', 'Perakit setup'),
+    el(
+      'p',
+      'setup-page__intro',
+      'Pilih satu keyboard, switch, keycaps, dan aksesori untuk melihat ringkasan serta estimasi harga.',
+    ),
+    el(
+      'p',
+      'setup-page__notice',
+      'Ini hanya penjumlahan katalog demo. Kompatibilitas antarproduk tidak diperiksa; pastikan kecocokan layout, konektor, dan komponen sebelum membeli.',
+    ),
+  );
+
+  const fields = el('div', 'setup-fields');
+  const selectedProducts = [];
+  for (const group of SETUP_GROUPS) {
+    const categoryProducts = products.filter((product) =>
+      group.categories.includes(product.kategori),
+    );
+    const selectedId = state.setupIds.find((id) =>
+      categoryProducts.some((product) => product.id === id),
+    );
+    const field = el('label', 'setup-field');
+    field.append(
+      el('span', 'setup-field__label', group.title),
+      el('span', 'setup-field__hint', group.categories.join(' / ')),
+    );
+    const select = el('select', 'catalog-toolbar__control');
+    select.append(createOption('', 'Tidak dipilih'));
+    for (const product of categoryProducts) {
+      select.append(
+        createOption(
+          product.id,
+          `${product.nama} · ${formatRupiah(product.harga)}${product.stok > 0 ? '' : ' · Stok habis'}`,
+        ),
+      );
+    }
+    select.value = selectedId || '';
+    select.addEventListener('change', () => {
+      const nextIds = state.setupIds.filter(
+        (id) => !categoryProducts.some((product) => product.id === id),
+      );
+      if (select.value) nextIds.push(select.value);
+      state.onSetupChange(nextIds);
+      state.onRefresh();
+    });
+    field.append(select);
+    fields.append(field);
+
+    const selectedProduct = categoryProducts.find(
+      (product) => product.id === selectedId,
+    );
+    if (selectedProduct) selectedProducts.push(selectedProduct);
+  }
+
+  const summary = el('section', 'setup-summary');
+  summary.append(
+    el('h2', 'setup-summary__title', 'Ringkasan pilihan'),
+    el('p', 'setup-summary__note', `${selectedProducts.length} item dipilih`),
+  );
+  const total = selectedProducts.reduce((sum, product) => sum + product.harga, 0);
+  summary.append(
+    el('p', 'setup-summary__total-label', 'Estimasi total katalog'),
+    el('p', 'setup-summary__total', formatRupiah(total)),
+  );
+
+  if (selectedProducts.length === 0) {
+    summary.append(
+      el(
+        'p',
+        'setup-summary__empty',
+        'Pilih item di atas untuk mulai menyusun setup.',
+      ),
+    );
+  } else {
+    const list = el('ul', 'setup-summary__list');
+    for (const product of selectedProducts) {
+      const item = el('li', 'setup-summary__item');
+      const info = el('div', 'setup-summary__product');
+      info.append(
+        el('span', 'setup-summary__category', product.kategori),
+        el('span', 'setup-summary__name', product.nama),
+        el('span', 'setup-summary__price', formatRupiah(product.harga)),
+        el(
+          'span',
+          product.stok > 0
+            ? 'setup-summary__stock'
+            : 'setup-summary__stock setup-summary__stock--out',
+          product.stok > 0 ? `Stok: ${product.stok}` : 'Stok habis',
+        ),
+      );
+      const removeButton = el('button', 'btn btn--secondary setup-summary__remove');
+      appendIconLabel(removeButton, 'fa-solid fa-xmark', 'Hapus');
+      removeButton.type = 'button';
+      removeButton.setAttribute('aria-label', `Hapus ${product.nama} dari setup`);
+      removeButton.addEventListener('click', () => {
+        state.onSetupChange(state.setupIds.filter((id) => id !== product.id));
+        state.onRefresh();
+      });
+      item.append(info, removeButton);
+      list.append(item);
+    }
+    summary.append(list);
+  }
+
+  section.append(fields, summary);
   return section;
 }
 
@@ -1094,6 +1442,23 @@ function openProductForm(products, product, trigger, onProductsChange, onRefresh
     descriptionCount.textContent = `${descriptionInput.value.length}/300`;
   });
 
+  const specificationsInput = el('textarea');
+  specificationsInput.rows = 5;
+  specificationsInput.maxLength = 1000;
+  specificationsInput.placeholder = 'Layout: 65%\nCasing: Aluminium';
+  const specificationsField = createProductField(
+    'spesifikasi',
+    'Spesifikasi (opsional, satu per baris)',
+    specificationsInput,
+  );
+  specificationsField.field.append(
+    el(
+      'span',
+      'form-field__count',
+      'Gunakan format nama: nilai, maksimal 8 baris.',
+    ),
+  );
+
   const imageInput = el('input');
   imageInput.type = 'text';
   imageInput.setAttribute('list', 'product-image-options');
@@ -1147,6 +1512,7 @@ function openProductForm(products, product, trigger, onProductsChange, onRefresh
     nameField.field,
     numericFields,
     descriptionField.field,
+    specificationsField.field,
     imageField.field,
     datalist,
     featuredLabel,
@@ -1161,6 +1527,7 @@ function openProductForm(products, product, trigger, onProductsChange, onRefresh
     harga: priceField,
     stok: stockField,
     deskripsi: descriptionField,
+    spesifikasi: specificationsField,
     imageUrl: imageField,
   };
 
@@ -1182,9 +1549,42 @@ function openProductForm(products, product, trigger, onProductsChange, onRefresh
     stockInput.value = String(product.stok);
     descriptionInput.value = product.deskripsi || '';
     descriptionCount.textContent = `${descriptionInput.value.length}/300`;
+    specificationsInput.value = (product.spesifikasi || [])
+      .map((item) => `${item.nama}: ${item.nilai}`)
+      .join('\n');
     imageInput.value = product.imageUrl || '';
     featuredInput.checked = product.unggulan;
   }
+
+  let imagePreview = createProductImage(
+    {
+      id: product?.id || '',
+      nama: nameInput.value.trim() || 'Pratinjau gambar produk',
+      kategori: categorySelect.value || 'Aksesori',
+      imageUrl: imageInput.value.trim() || '/images/placeholder-default.svg',
+    },
+    'product-form__image-preview',
+    'lazy',
+  );
+  imageField.field.append(imagePreview);
+  const updateImagePreview = () => {
+    const previewProduct = {
+      id: product?.id || '',
+      nama: nameInput.value.trim() || 'Pratinjau gambar produk',
+      kategori: categorySelect.value || 'Aksesori',
+      imageUrl: imageInput.value.trim() || '/images/placeholder-default.svg',
+    };
+    const nextPreview = createProductImage(
+      previewProduct,
+      'product-form__image-preview',
+      'lazy',
+    );
+    imagePreview.replaceWith(nextPreview);
+    imagePreview = nextPreview;
+  };
+  imageInput.addEventListener('input', updateImagePreview);
+  categorySelect.addEventListener('change', updateImagePreview);
+  nameInput.addEventListener('input', updateImagePreview);
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -1197,10 +1597,19 @@ function openProductForm(products, product, trigger, onProductsChange, onRefresh
       harga: priceInput.value,
       stok: stockInput.value,
       deskripsi: descriptionInput.value,
+      spesifikasi: specificationsInput.value,
       imageUrl: imageInput.value,
       unggulan: featuredInput.checked,
     };
-    const validation = validateProduct(input);
+    const parsedSpecifications = parseProductSpecifications(input.spesifikasi);
+    const validation = validateProduct({
+      ...input,
+      spesifikasi: parsedSpecifications.specifications,
+    });
+    if (!parsedSpecifications.valid) {
+      validation.valid = false;
+      validation.errors.spesifikasi = parsedSpecifications.error;
+    }
     let firstInvalidField;
 
     for (const [name, field] of Object.entries(fields)) {
@@ -1231,6 +1640,7 @@ function openProductForm(products, product, trigger, onProductsChange, onRefresh
       harga: Number(input.harga),
       stok: Number(input.stok),
       deskripsi: input.deskripsi.trim(),
+      spesifikasi: parsedSpecifications.specifications,
       imageUrl: input.imageUrl.trim() || '/images/placeholder-default.svg',
       unggulan: input.unggulan,
     };
@@ -1264,7 +1674,12 @@ function openProductForm(products, product, trigger, onProductsChange, onRefresh
   nameInput.focus();
 }
 
-function renderProductTable(products, onProductsChange, onRefresh) {
+function renderProductTable(
+  products,
+  onProductsChange,
+  onRefresh,
+  allProducts = products,
+) {
   if (products.length === 0) {
     const empty = el('div', 'empty-state');
     empty.append(
@@ -1296,15 +1711,36 @@ function renderProductTable(products, onProductsChange, onRefresh) {
       return cell;
     };
 
-    addCell('Produk', product.nama);
+    const productCell = addCell('Produk', '');
+    productCell.classList.add('dashboard-table__product-cell');
+    const productInfo = el('div', 'dashboard-table__product');
+    productInfo.append(
+      createProductImage(product, 'dashboard-table__image', 'lazy'),
+      el('span', 'dashboard-table__product-name', product.nama),
+    );
+    productCell.append(productInfo);
     addCell('Kategori', product.kategori);
     addCell('Harga', formatRupiah(product.harga)).classList.add(
       'dashboard-table__numeric',
     );
-    addCell(
-      'Stok',
-      product.stok === 0 ? '0 (Habis)' : String(product.stok),
-    ).classList.add('dashboard-table__numeric');
+    const stockCell = addCell('Stok', '');
+    stockCell.classList.add('dashboard-table__numeric');
+    const stockStatus = product.stok === 0
+      ? 'dashboard-stock dashboard-stock--out'
+      : product.stok <= LOW_STOCK
+        ? 'dashboard-stock dashboard-stock--low'
+        : 'dashboard-stock';
+    stockCell.append(
+      el(
+        'span',
+        stockStatus,
+        product.stok === 0
+          ? 'Habis'
+          : product.stok <= LOW_STOCK
+            ? `Rendah · ${product.stok}`
+            : String(product.stok),
+      ),
+    );
     addCell('Unggulan', product.unggulan ? 'Ya' : '–');
 
     const actionsCell = addCell('Aksi', '');
@@ -1314,7 +1750,7 @@ function renderProductTable(products, onProductsChange, onRefresh) {
     editButton.type = 'button';
     editButton.setAttribute('aria-label', `Ubah ${product.nama}`);
     editButton.addEventListener('click', () => {
-      openProductForm(products, product, editButton, onProductsChange, onRefresh);
+      openProductForm(allProducts, product, editButton, onProductsChange, onRefresh);
     });
 
     const deleteButton = el('button', 'btn btn--danger');
@@ -1328,7 +1764,7 @@ function renderProductTable(products, onProductsChange, onRefresh) {
       if (!confirmed) return;
 
       const result = onProductsChange(
-        products.filter((current) => current.id !== product.id),
+        allProducts.filter((current) => current.id !== product.id),
       );
       if (!result.ok) {
         onRefresh({
@@ -1486,9 +1922,50 @@ function renderDashboard(products, onProductsChange, onRefresh) {
   actions.append(addButton, exportButton, importButton, resetButton, importInput);
 
   const productsSection = el('section', 'dashboard-products');
+  const productSearchField = el('label', 'dashboard-products__search');
+  productSearchField.append(el('span', 'catalog-toolbar__label', 'Cari produk'));
+  const productSearch = el('input', 'catalog-toolbar__control');
+  productSearch.type = 'search';
+  productSearch.placeholder = 'Cari nama atau kategori…';
+  productSearchField.append(productSearch);
+  const productTableStatus = el('p', 'dashboard-products__status');
+  productTableStatus.setAttribute('role', 'status');
+  productTableStatus.setAttribute('aria-live', 'polite');
+  const productTableContainer = el('div', 'dashboard-products__table');
+  function updateProductTable() {
+    const query = productSearch.value.trim().toLocaleLowerCase('id');
+    const filteredProducts = products.filter((product) =>
+      [product.nama, product.kategori].some((value) =>
+        value.toLocaleLowerCase('id').includes(query),
+      ),
+    );
+    productTableStatus.textContent = `Menampilkan ${filteredProducts.length} dari ${products.length} produk`;
+    if (products.length > 0 && filteredProducts.length === 0) {
+      const empty = el('div', 'empty-state');
+      empty.append(
+        el('h3', 'empty-state__title', 'Produk tidak ditemukan.'),
+        el('p', 'empty-state__text', 'Coba kata kunci atau kategori lain.'),
+      );
+      productTableContainer.replaceChildren(empty);
+      return;
+    }
+
+    productTableContainer.replaceChildren(
+      renderProductTable(
+        filteredProducts,
+        onProductsChange,
+        onRefresh,
+        products,
+      ),
+    );
+  }
+  productSearch.addEventListener('input', updateProductTable);
+  updateProductTable();
   productsSection.append(
     el('h2', 'dashboard-products__title', 'Daftar produk'),
-    renderProductTable(products, onProductsChange, onRefresh),
+    productSearchField,
+    productTableStatus,
+    productTableContainer,
   );
 
   section.append(
@@ -1522,6 +1999,7 @@ function renderFooter() {
     ['Panduan', '#/panduan'],
     ['FAQ', '#/faq'],
     ['Tentang', '#/tentang'],
+    ['Perakit setup', '#/setup'],
     ['Wishlist', '#/wishlist'],
     ['Perbandingan', '#/perbandingan'],
   ]) {
@@ -1565,12 +2043,14 @@ export function renderApp(
     products,
     wishlistIds,
     comparisonIds,
+    setupIds,
     catalogFilters,
     notice,
     onDismissNotice,
     onProductsChange,
     onWishlistChange,
     onComparisonChange,
+    onSetupChange,
     onCatalogFiltersChange,
     onRefresh,
   },
@@ -1587,12 +2067,15 @@ export function renderApp(
   const validComparisonIds = comparisonIds
     .filter((id) => productIds.has(id))
     .slice(0, MAX_COMPARISON_PRODUCTS);
+  const validSetupIds = setupIds.filter((id) => productIds.has(id));
   const state = {
     wishlistIds: validWishlistIds,
     comparisonIds: validComparisonIds,
+    setupIds: validSetupIds,
     catalogFilters,
     onWishlistChange,
     onComparisonChange,
+    onSetupChange,
     onCatalogFiltersChange,
     onRefresh,
   };
@@ -1607,6 +2090,8 @@ export function renderApp(
     main.append(renderWishlistPage(products, state));
   } else if (page === 'comparison') {
     main.append(renderComparisonPage(products, state));
+  } else if (page === 'setup') {
+    main.append(renderSetupPage(products, state));
   } else if (Object.prototype.hasOwnProperty.call(INFO_PAGES, page)) {
     main.append(renderInfoPage(page));
   } else {
@@ -1625,6 +2110,7 @@ export function renderApp(
     about: 'Tentang — Ramy Keys',
     wishlist: 'Wishlist — Ramy Keys',
     comparison: 'Perbandingan — Ramy Keys',
+    setup: 'Perakit setup — Ramy Keys',
   };
   document.title =
     page === 'product'

@@ -4,9 +4,12 @@ import {
   loadProductIdList,
   loadProducts,
   parseProductsJson,
+  parseWishlistJson,
+  serializeWishlistJson,
   saveProductIdList,
   saveProducts,
   validateProducts,
+  WISHLIST_EXPORT_FORMAT,
   WISHLIST_STORAGE_KEY,
 } from './store.js';
 
@@ -37,6 +40,7 @@ describe('localStorage product parser', () => {
   it('loads a valid array and normalizes optional fields', () => {
     const product = { ...PRODUCTS[0] };
     delete product.deskripsi;
+    delete product.spesifikasi;
     delete product.imageUrl;
     stored.set(STORAGE_KEY, JSON.stringify([product]));
 
@@ -44,6 +48,7 @@ describe('localStorage product parser', () => {
 
     expect(result.notice).toBeNull();
     expect(result.products[0].deskripsi).toBe('');
+    expect(result.products[0].spesifikasi).toEqual(PRODUCTS[0].spesifikasi);
     expect(result.products[0].imageUrl).toBe('');
   });
 
@@ -113,6 +118,52 @@ describe('JSON import validation', () => {
   it('rejects malformed JSON and non-array payloads', () => {
     expect(parseProductsJson('{bad').ok).toBe(false);
     expect(parseProductsJson(JSON.stringify({ products: PRODUCTS })).ok).toBe(false);
+  });
+
+  it('imports valid Wishlist IDs, deduplicates, and ignores unavailable products', () => {
+    expect(
+      parseWishlistJson(
+        JSON.stringify({
+          format: WISHLIST_EXPORT_FORMAT,
+          version: 1,
+          productIds: ['p-001', 'p-001', 'p-missing'],
+        }),
+        new Set(['p-001']),
+      ),
+    ).toEqual({ ok: true, ids: ['p-001'] });
+  });
+
+  it('exports a versioned Wishlist payload with unique product IDs', () => {
+    expect(JSON.parse(serializeWishlistJson(['p-001', 'p-001', 'p-002']))).toEqual({
+      format: WISHLIST_EXPORT_FORMAT,
+      version: 1,
+      productIds: ['p-001', 'p-002'],
+    });
+  });
+
+  it('rejects unsupported or malformed Wishlist files', () => {
+    const validIds = new Set(['p-001']);
+    expect(parseWishlistJson('{broken', validIds).ok).toBe(false);
+    expect(
+      parseWishlistJson(
+        JSON.stringify({
+          format: WISHLIST_EXPORT_FORMAT,
+          version: 2,
+          productIds: ['p-001'],
+        }),
+        validIds,
+      ).ok,
+    ).toBe(false);
+    expect(
+      parseWishlistJson(
+        JSON.stringify({
+          format: WISHLIST_EXPORT_FORMAT,
+          version: 1,
+          productIds: [''],
+        }),
+        validIds,
+      ).ok,
+    ).toBe(false);
   });
 
   it('rejects invalid field types and duplicate IDs', () => {

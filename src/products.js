@@ -58,6 +58,12 @@ export const PRODUCTS = [
     harga: 1450000,
     stok: 6,
     deskripsi: 'Kit 65% casing aluminium, hot-swap, plat PC.',
+    spesifikasi: [
+      { nama: 'Layout', nilai: '65%' },
+      { nama: 'Casing', nilai: 'Aluminium' },
+      { nama: 'PCB', nilai: 'Hot-swap' },
+      { nama: 'Plat', nilai: 'PC' },
+    ],
     imageUrl: '/images/products/ramy65-aluminum-kit.png',
     unggulan: true,
   },
@@ -68,6 +74,11 @@ export const PRODUCTS = [
     harga: 1100000,
     stok: 4,
     deskripsi: 'Kit 75% dengan mount gasket dan PCB hot-swap.',
+    spesifikasi: [
+      { nama: 'Layout', nilai: '75%' },
+      { nama: 'Mount', nilai: 'Gasket' },
+      { nama: 'PCB', nilai: 'Hot-swap' },
+    ],
     imageUrl: '/images/products/ramy75-gasket-kit-hot-swap.png',
     unggulan: false,
   },
@@ -78,6 +89,11 @@ export const PRODUCTS = [
     harga: 1850000,
     stok: 5,
     deskripsi: 'Keyboard 68 tombol siap pakai dengan switch tactile.',
+    spesifikasi: [
+      { nama: 'Jumlah tombol', nilai: '68' },
+      { nama: 'Switch', nilai: 'Tactile' },
+      { nama: 'Kondisi', nilai: 'Prebuilt' },
+    ],
     imageUrl: '/images/products/ramy-tactile-68-prebuilt.png',
     unggulan: true,
   },
@@ -88,6 +104,11 @@ export const PRODUCTS = [
     harga: 950000,
     stok: 0,
     deskripsi: 'Keyboard ringkas 60% dengan layout minimalis.',
+    spesifikasi: [
+      { nama: 'Layout', nilai: '60%' },
+      { nama: 'Desain', nilai: 'Minimalis' },
+      { nama: 'Kondisi', nilai: 'Prebuilt' },
+    ],
     imageUrl: '/images/products/ramy-compact-60-prebuilt.png',
     unggulan: false,
   },
@@ -98,6 +119,11 @@ export const PRODUCTS = [
     harga: 185000,
     stok: 40,
     deskripsi: 'Set berisi 70 switch linear dengan rasa tekan ringan.',
+    spesifikasi: [
+      { nama: 'Tipe switch', nilai: 'Linear' },
+      { nama: 'Isi set', nilai: '70 switch' },
+      { nama: 'Karakter', nilai: 'Rasa tekan ringan' },
+    ],
     imageUrl: '/images/products/switch-linear-cloud-70.png',
     unggulan: true,
   },
@@ -108,6 +134,11 @@ export const PRODUCTS = [
     harga: 210000,
     stok: 25,
     deskripsi: 'Set berisi 70 switch tactile dengan bump yang terasa.',
+    spesifikasi: [
+      { nama: 'Tipe switch', nilai: 'Tactile' },
+      { nama: 'Isi set', nilai: '70 switch' },
+      { nama: 'Karakter', nilai: 'Bump terasa' },
+    ],
     imageUrl: '/images/products/switch-tactile-ember-70.png',
     unggulan: false,
   },
@@ -118,6 +149,11 @@ export const PRODUCTS = [
     harga: 420000,
     stok: 12,
     deskripsi: 'Set keycaps PBT 135 tombol dengan tema warna sakura.',
+    spesifikasi: [
+      { nama: 'Material', nilai: 'PBT' },
+      { nama: 'Isi set', nilai: '135 tombol' },
+      { nama: 'Tema warna', nilai: 'Sakura' },
+    ],
     imageUrl: '/images/products/keycaps-pbt-sakura-135.png',
     unggulan: false,
   },
@@ -128,10 +164,62 @@ export const PRODUCTS = [
     harga: 175000,
     stok: 15,
     deskripsi: 'Kabel USB-C spiral untuk melengkapi setup keyboard.',
+    spesifikasi: [
+      { nama: 'Konektor', nilai: 'USB-C' },
+      { nama: 'Bentuk kabel', nilai: 'Spiral' },
+    ],
     imageUrl: '/images/products/kabel-usb-c-coiled.png',
     unggulan: false,
   },
 ];
+
+export function parseProductSpecifications(raw) {
+  if (typeof raw !== 'string') {
+    return {
+      valid: false,
+      specifications: [],
+      error: 'Spesifikasi harus berupa teks.',
+    };
+  }
+
+  const lines = raw.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length > 8) {
+    return {
+      valid: false,
+      specifications: [],
+      error: 'Maksimal 8 spesifikasi.',
+    };
+  }
+
+  const specifications = [];
+  const labels = new Set();
+  for (const [index, line] of lines.entries()) {
+    const separator = line.indexOf(':');
+    const nama = separator < 0 ? '' : line.slice(0, separator).trim();
+    const nilai = separator < 0 ? '' : line.slice(separator + 1).trim();
+    const normalizedName = nama.toLocaleLowerCase('id');
+
+    if (!nama || nama.length > 40 || !nilai || nilai.length > 80) {
+      return {
+        valid: false,
+        specifications: [],
+        error: `Format spesifikasi baris ${index + 1} tidak valid. Gunakan nama: nilai.`,
+      };
+    }
+    if (labels.has(normalizedName)) {
+      return {
+        valid: false,
+        specifications: [],
+        error: `Nama spesifikasi "${nama}" tidak boleh duplikat.`,
+      };
+    }
+
+    labels.add(normalizedName);
+    specifications.push({ nama, nilai });
+  }
+
+  return { valid: true, specifications, error: null };
+}
 
 export function validateProduct(input) {
   const errors = {};
@@ -171,6 +259,31 @@ export function validateProduct(input) {
   }
   if (typeof input.unggulan !== 'boolean') {
     errors.unggulan = 'Status unggulan harus berupa pilihan ya atau tidak.';
+  }
+  if (input.spesifikasi !== undefined) {
+    const specifications = input.spesifikasi;
+    if (!Array.isArray(specifications) || specifications.length > 8) {
+      errors.spesifikasi = 'Maksimal 8 spesifikasi dalam bentuk daftar.';
+    } else {
+      const labels = new Set();
+      for (const item of specifications) {
+        if (
+          item === null ||
+          typeof item !== 'object' ||
+          typeof item.nama !== 'string' ||
+          typeof item.nilai !== 'string' ||
+          !item.nama.trim() ||
+          item.nama.trim().length > 40 ||
+          !item.nilai.trim() ||
+          item.nilai.trim().length > 80 ||
+          labels.has(item.nama.trim().toLocaleLowerCase('id'))
+        ) {
+          errors.spesifikasi = 'Format spesifikasi tidak valid atau memiliki nama duplikat.';
+          break;
+        }
+        labels.add(item.nama.trim().toLocaleLowerCase('id'));
+      }
+    }
   }
 
   return { valid: Object.keys(errors).length === 0, errors };
