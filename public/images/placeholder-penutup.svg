@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Ilustrasi placeholder penutup">
+  <rect width="800" height="600" fill="#221840" />
+  <rect x="56" y="56" width="688" height="488" rx="24" fill="#2a1f4d" stroke="#4b3a7a" stroke-width="4" />
+  <rect x="250" y="230" width="300" height="180" rx="24" fill="#3b2a6b" stroke="#a78bfa" stroke-width="5" />
+  <path d="M250 280 Q400 330 550 280" fill="none" stroke="#c4b5fd" stroke-width="8" />
+  <path d="M300 230 Q330 170 400 190 Q470 170 500 230" fill="#6d28d9" stroke="#c4b5fd" stroke-width="5" />
+  <circle cx="400" cy="200" r="20" fill="#fca5a5" />
+  <text x="400" y="480" fill="#c4b5fd" font-family="system-ui, sans-serif" font-size="36" font-weight="700" text-anchor="middle">Penutup</text>
+</svg>

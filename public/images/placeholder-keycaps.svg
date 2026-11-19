@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Ilustrasi keycaps">
+  <rect width="800" height="600" fill="#120b1f"/>
+  <g stroke="#7c6bb0" stroke-width="7">
+    <path d="M166 204h196l24 30v130l-24 26H166l-24-26V234z" fill="#c4b5fd"/>
+    <path d="M438 204h196l24 30v130l-24 26H438l-24-26V234z" fill="#a78bfa"/>
+    <path d="M302 338h196l24 30v104l-24 26H302l-24-26V368z" fill="#fde68a"/>
+  </g>
+  <text x="264" y="306" fill="#221840" font-family="system-ui,sans-serif" font-size="44" font-weight="700" text-anchor="middle">A</text>
+  <text x="536" y="306" fill="#221840" font-family="system-ui,sans-serif" font-size="44" font-weight="700" text-anchor="middle">S</text>
+  <text x="400" y="424" fill="#221840" font-family="system-ui,sans-serif" font-size="40" font-weight="700" text-anchor="middle">SPACE</text>
+  <text x="400" y="550" fill="#f4effc" font-family="system-ui,sans-serif" font-size="30" text-anchor="middle">KEYCAPS</text>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Ilustrasi switch keyboard">
+  <rect width="800" height="600" fill="#120b1f"/>
+  <path d="M274 138h252l52 74v214l-52 46H274l-52-46V212z" fill="#2a1f4d" stroke="#a78bfa" stroke-width="10"/>
+  <path d="M320 190h160v108H320z" rx="16" fill="#c4b5fd"/>
+  <path d="M350 298h100v100H350z" fill="#7c6bb0"/>
+  <path d="M300 472v38m200-38v38" stroke="#f4effc" stroke-width="14" stroke-linecap="round"/>
+  <text x="400" y="558" fill="#f4effc" font-family="system-ui,sans-serif" font-size="30" text-anchor="middle">SWITCH</text>
+</svg>

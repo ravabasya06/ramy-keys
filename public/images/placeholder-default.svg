@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Placeholder produk Ramy Keys">
+  <rect width="800" height="600" fill="#120b1f"/>
+  <rect x="170" y="154" width="460" height="292" rx="30" fill="#2a1f4d" stroke="#7c6bb0" stroke-width="8"/>
+  <g fill="#c4b5fd">
+    <rect x="210" y="194" width="74" height="58" rx="10"/><rect x="298" y="194" width="74" height="58" rx="10"/><rect x="386" y="194" width="74" height="58" rx="10"/><rect x="474" y="194" width="74" height="58" rx="10"/>
+    <rect x="210" y="266" width="74" height="58" rx="10"/><rect x="298" y="266" width="74" height="58" rx="10"/><rect x="386" y="266" width="74" height="58" rx="10"/><rect x="474" y="266" width="74" height="58" rx="10"/>
+    <rect x="250" y="338" width="300" height="58" rx="10"/>
+  </g>
+  <text x="400" y="510" fill="#f4effc" font-family="system-ui,sans-serif" font-size="30" text-anchor="middle">RAMY KEYS</text>
+</svg>

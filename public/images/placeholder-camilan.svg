@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Ilustrasi placeholder camilan">
+  <rect width="800" height="600" fill="#221840" />
+  <rect x="56" y="56" width="688" height="488" rx="24" fill="#2a1f4d" stroke="#4b3a7a" stroke-width="4" />
+  <path d="M180 380 L260 180 L380 180 L460 380 Z" fill="#3b2a6b" stroke="#a78bfa" stroke-width="5" />
+  <path d="M340 380 L420 180 L540 180 L620 380 Z" fill="#4c1d95" stroke="#c4b5fd" stroke-width="5" />
+  <g fill="#fcd34d">
+    <circle cx="270" cy="280" r="14" />
+    <circle cx="330" cy="320" r="14" />
+    <circle cx="430" cy="270" r="14" />
+    <circle cx="500" cy="320" r="14" />
+    <circle cx="550" cy="250" r="14" />
+  </g>
+  <text x="400" y="480" fill="#c4b5fd" font-family="system-ui, sans-serif" font-size="36" font-weight="700" text-anchor="middle">Camilan</text>
+</svg>

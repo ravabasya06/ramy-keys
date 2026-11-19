@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Ilustrasi aksesori keyboard">
+  <rect width="800" height="600" fill="#120b1f"/>
+  <path d="M236 190c0-54 44-98 98-98h130c54 0 98 44 98 98v72h-76v-72c0-12-10-22-22-22H334c-12 0-22 10-22 22v148c0 12 10 22 22 22h128c12 0 22-10 22-22v-34h76v34c0 54-44 98-98 98H334c-54 0-98-44-98-98z" fill="none" stroke="#c4b5fd" stroke-width="34" stroke-linejoin="round"/>
+  <rect x="448" y="154" width="88" height="68" rx="18" fill="#fde68a"/>
+  <text x="400" y="540" fill="#f4effc" font-family="system-ui,sans-serif" font-size="30" text-anchor="middle">AKSESORI</text>
+</svg>
