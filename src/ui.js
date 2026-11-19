@@ -8,9 +8,11 @@ import {
   buildWhatsAppUrl,
   filterProducts,
   LOW_STOCK,
+  PRODUCTS,
   WA_NUMBER,
+  validateProduct,
 } from './products.js';
-import { summarize } from './store.js';
+import { parseProductsJson, summarize } from './store.js';
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -339,9 +341,9 @@ function createOption(value, label) {
   return option;
 }
 
-function renderCategoryOverview(products) {
+function renderCategoryOverview(products, title = 'Jelajahi kategori') {
   const overview = el('div', 'category-overview');
-  overview.append(el('h3', 'category-overview__title', 'Jelajahi kategori'));
+  overview.append(el('h3', 'category-overview__title', title));
 
   const categories = el('ul', 'category-list');
   categories.setAttribute('aria-label', 'Kategori produk');
@@ -370,7 +372,353 @@ function renderSummaryCard(label, value, note) {
   return card;
 }
 
-function renderDashboard(products) {
+function createProductField(name, labelText, control, required = false) {
+  const field = el('div', 'form-field');
+  const label = el(
+    'label',
+    'form-field__label',
+    required ? `${labelText} *` : labelText,
+  );
+  const error = el('p', 'form-field__error');
+
+  control.id = `product-${name}`;
+  control.name = name;
+  control.classList.add('form-field__control');
+  label.htmlFor = control.id;
+  error.id = `${control.id}-error`;
+  error.hidden = true;
+  control.setAttribute('aria-describedby', error.id);
+  field.append(label, control, error);
+
+  return { field, control, error };
+}
+
+function createProductId() {
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
+    return cryptoApi.randomUUID();
+  }
+  return `p-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function openProductForm(products, product, trigger, onProductsChange, onRefresh) {
+  const dialog = el('dialog', 'product-dialog');
+  dialog.setAttribute('aria-labelledby', 'product-dialog-title');
+
+  const form = el('form', 'product-form');
+  form.noValidate = true;
+  const heading = el(
+    'h2',
+    'product-form__title',
+    product ? 'Ubah produk' : 'Tambah produk',
+  );
+  heading.id = 'product-dialog-title';
+
+  const nameInput = el('input');
+  nameInput.type = 'text';
+  nameInput.required = true;
+  nameInput.maxLength = 80;
+  nameInput.autocomplete = 'off';
+  const nameField = createProductField('nama', 'Nama produk', nameInput, true);
+
+  const categorySelect = el('select');
+  categorySelect.required = true;
+  categorySelect.append(createOption('', 'Pilih kategori'));
+  for (const category of CATEGORIES) {
+    categorySelect.append(createOption(category, category));
+  }
+  const categoryField = createProductField(
+    'kategori',
+    'Kategori',
+    categorySelect,
+    true,
+  );
+
+  const priceInput = el('input');
+  priceInput.type = 'number';
+  priceInput.inputMode = 'numeric';
+  priceInput.min = '0';
+  priceInput.step = '1';
+  priceInput.required = true;
+  const priceField = createProductField('harga', 'Harga (Rp)', priceInput, true);
+
+  const stockInput = el('input');
+  stockInput.type = 'number';
+  stockInput.inputMode = 'numeric';
+  stockInput.min = '0';
+  stockInput.step = '1';
+  stockInput.required = true;
+  const stockField = createProductField('stok', 'Stok', stockInput, true);
+
+  const numericFields = el('div', 'product-form__grid');
+  numericFields.append(categoryField.field, priceField.field, stockField.field);
+
+  const descriptionInput = el('textarea');
+  descriptionInput.maxLength = 300;
+  descriptionInput.rows = 4;
+  const descriptionField = createProductField(
+    'deskripsi',
+    'Deskripsi (opsional)',
+    descriptionInput,
+  );
+  const descriptionCount = el('span', 'form-field__count', '0/300');
+  descriptionField.field.append(descriptionCount);
+  descriptionInput.addEventListener('input', () => {
+    descriptionCount.textContent = `${descriptionInput.value.length}/300`;
+  });
+
+  const imageInput = el('input');
+  imageInput.type = 'text';
+  imageInput.setAttribute('list', 'product-image-options');
+  imageInput.placeholder = '/images/placeholder-default.svg';
+  const imageField = createProductField(
+    'imageUrl',
+    'Gambar (path lokal)',
+    imageInput,
+  );
+
+  const datalist = el('datalist');
+  datalist.id = 'product-image-options';
+  for (const imagePath of [
+    '/images/placeholder-kit.svg',
+    '/images/placeholder-prebuilt.svg',
+    '/images/placeholder-switch.svg',
+    '/images/placeholder-keycaps.svg',
+    '/images/placeholder-accessory.svg',
+    '/images/placeholder-default.svg',
+  ]) {
+    datalist.append(createOption(imagePath, imagePath));
+  }
+
+  const featuredInput = el('input');
+  featuredInput.type = 'checkbox';
+  featuredInput.name = 'unggulan';
+  featuredInput.id = 'product-unggulan';
+  const featuredLabel = el('label', 'product-form__checkbox');
+  featuredLabel.append(
+    featuredInput,
+    el('span', null, 'Tandai sebagai produk unggulan'),
+  );
+
+  const formMessage = el('p', 'product-form__message');
+  formMessage.setAttribute('role', 'alert');
+  formMessage.hidden = true;
+
+  const actions = el('div', 'product-form__actions');
+  const cancelButton = el('button', 'btn btn--secondary', 'Batal');
+  cancelButton.type = 'button';
+  cancelButton.addEventListener('click', () => dialog.close());
+  const saveButton = el('button', 'btn btn--primary', 'Simpan');
+  saveButton.type = 'submit';
+  actions.append(cancelButton, saveButton);
+
+  form.append(
+    heading,
+    el('p', 'product-form__hint', '* wajib diisi'),
+    nameField.field,
+    numericFields,
+    descriptionField.field,
+    imageField.field,
+    datalist,
+    featuredLabel,
+    formMessage,
+    actions,
+  );
+  dialog.append(form);
+
+  const fields = {
+    nama: nameField,
+    kategori: categoryField,
+    harga: priceField,
+    stok: stockField,
+    deskripsi: descriptionField,
+    imageUrl: imageField,
+  };
+
+  for (const field of Object.values(fields)) {
+    const clearError = () => {
+      field.control.removeAttribute('aria-invalid');
+      field.control.classList.remove('is-invalid');
+      field.error.textContent = '';
+      field.error.hidden = true;
+    };
+    field.control.addEventListener('input', clearError);
+    field.control.addEventListener('change', clearError);
+  }
+
+  if (product) {
+    nameInput.value = product.nama;
+    categorySelect.value = product.kategori;
+    priceInput.value = String(product.harga);
+    stockInput.value = String(product.stok);
+    descriptionInput.value = product.deskripsi || '';
+    descriptionCount.textContent = `${descriptionInput.value.length}/300`;
+    imageInput.value = product.imageUrl || '';
+    featuredInput.checked = product.unggulan;
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    formMessage.hidden = true;
+    formMessage.textContent = '';
+
+    const input = {
+      nama: nameInput.value,
+      kategori: categorySelect.value,
+      harga: priceInput.value,
+      stok: stockInput.value,
+      deskripsi: descriptionInput.value,
+      imageUrl: imageInput.value,
+      unggulan: featuredInput.checked,
+    };
+    const validation = validateProduct(input);
+    let firstInvalidField;
+
+    for (const [name, field] of Object.entries(fields)) {
+      const errorMessage = validation.errors[name];
+      if (errorMessage) {
+        field.error.textContent = `! ${errorMessage}`;
+        field.error.hidden = false;
+        field.control.setAttribute('aria-invalid', 'true');
+        field.control.classList.add('is-invalid');
+        if (!firstInvalidField) firstInvalidField = field.control;
+      } else {
+        field.error.textContent = '';
+        field.error.hidden = true;
+        field.control.removeAttribute('aria-invalid');
+        field.control.classList.remove('is-invalid');
+      }
+    }
+
+    if (!validation.valid) {
+      firstInvalidField?.focus();
+      return;
+    }
+
+    const normalizedProduct = {
+      id: product ? product.id : createProductId(),
+      nama: input.nama.trim(),
+      kategori: input.kategori,
+      harga: Number(input.harga),
+      stok: Number(input.stok),
+      deskripsi: input.deskripsi.trim(),
+      imageUrl: input.imageUrl.trim() || '/images/placeholder-default.svg',
+      unggulan: input.unggulan,
+    };
+    const nextProducts = product
+      ? products.map((current) =>
+          current.id === product.id ? normalizedProduct : current,
+        )
+      : [...products, normalizedProduct];
+    const result = onProductsChange(nextProducts);
+
+    if (!result.ok) {
+      formMessage.textContent =
+        'Gagal menyimpan ke browser. Perubahan tidak disimpan.';
+      formMessage.hidden = false;
+      return;
+    }
+
+    dialog.close();
+    onRefresh({
+      message: product ? 'Perubahan disimpan.' : 'Produk ditambahkan.',
+      type: 'success',
+    });
+  });
+
+  dialog.addEventListener('close', () => {
+    dialog.remove();
+    if (trigger.isConnected) trigger.focus();
+  });
+  document.body.append(dialog);
+  dialog.showModal();
+  nameInput.focus();
+}
+
+function renderProductTable(products, onProductsChange, onRefresh) {
+  if (products.length === 0) {
+    const empty = el('div', 'empty-state');
+    empty.append(
+      el('h3', 'empty-state__title', 'Belum ada produk.'),
+      el('p', 'empty-state__text', 'Tambahkan produk untuk menampilkannya di sini.'),
+    );
+    return empty;
+  }
+
+  const wrapper = el('div', 'dashboard-table-wrap');
+  const table = el('table', 'dashboard-table');
+  const caption = el('caption', 'visually-hidden', 'Daftar produk Ramy Keys');
+  const head = el('thead');
+  const headerRow = el('tr');
+  for (const title of ['Produk', 'Kategori', 'Harga', 'Stok', 'Unggulan', 'Aksi']) {
+    const cell = el('th', null, title);
+    cell.scope = 'col';
+    headerRow.append(cell);
+  }
+  head.append(headerRow);
+  const body = el('tbody');
+
+  for (const product of products) {
+    const row = el('tr');
+    const addCell = (label, text) => {
+      const cell = el('td', null, text);
+      cell.setAttribute('data-label', label);
+      row.append(cell);
+      return cell;
+    };
+
+    addCell('Produk', product.nama);
+    addCell('Kategori', product.kategori);
+    addCell('Harga', formatRupiah(product.harga)).classList.add(
+      'dashboard-table__numeric',
+    );
+    addCell(
+      'Stok',
+      product.stok === 0 ? '0 (Habis)' : String(product.stok),
+    ).classList.add('dashboard-table__numeric');
+    addCell('Unggulan', product.unggulan ? 'Ya' : '–');
+
+    const actionsCell = addCell('Aksi', '');
+    const actions = el('div', 'dashboard-table__actions');
+    const editButton = el('button', 'btn btn--secondary', 'Ubah');
+    editButton.type = 'button';
+    editButton.setAttribute('aria-label', `Ubah ${product.nama}`);
+    editButton.addEventListener('click', () => {
+      openProductForm(products, product, editButton, onProductsChange, onRefresh);
+    });
+
+    const deleteButton = el('button', 'btn btn--danger', 'Hapus');
+    deleteButton.type = 'button';
+    deleteButton.setAttribute('aria-label', `Hapus ${product.nama}`);
+    deleteButton.addEventListener('click', () => {
+      const confirmed = window.confirm(
+        `Hapus "${product.nama}"? Tindakan ini tidak dapat dibatalkan.`,
+      );
+      if (!confirmed) return;
+
+      const result = onProductsChange(
+        products.filter((current) => current.id !== product.id),
+      );
+      if (!result.ok) {
+        onRefresh({
+          message: 'Gagal menyimpan ke browser. Perubahan tidak disimpan.',
+          type: 'error',
+        });
+        return;
+      }
+      onRefresh({ message: 'Produk dihapus.', type: 'success' });
+    });
+    actions.append(editButton, deleteButton);
+    actionsCell.replaceChildren(actions);
+    body.append(row);
+  }
+
+  table.append(caption, head, body);
+  wrapper.append(table);
+  return wrapper;
+}
+
+function renderDashboard(products, onProductsChange, onRefresh) {
   const stats = summarize(products);
   const section = el('section', 'dashboard container');
 
@@ -386,7 +734,7 @@ function renderDashboard(products) {
 
   section.append(
     banner,
-    el('h1', 'page-title', 'Dashboard Demo'),
+    el('h1', 'page-title', 'Dashboard Pengelola (Demo)'),
   );
 
   const summary = el('div', 'summary-grid');
@@ -396,21 +744,107 @@ function renderDashboard(products) {
     renderSummaryCard('Stok habis', stats.outOfStock, 'produk bernilai 0'),
   );
 
-  const note = el('div', 'panel');
-  note.append(
-    el('h2', 'panel__title', 'Pengelolaan produk'),
-    el(
-      'p',
-      'panel__text',
-      'Pengelolaan produk akan tersedia pada tahap berikutnya.',
-    ),
+  const actions = el('div', 'dashboard-actions');
+  const addButton = el('button', 'btn btn--primary', 'Tambah produk');
+  addButton.type = 'button';
+  addButton.addEventListener('click', () => {
+    openProductForm(products, null, addButton, onProductsChange, onRefresh);
+  });
+
+  const exportButton = el('button', 'btn btn--secondary', 'Ekspor JSON');
+  exportButton.type = 'button';
+  exportButton.addEventListener('click', () => {
+    try {
+      const blob = new Blob([JSON.stringify(products, null, 2)], {
+        type: 'application/json',
+      });
+      const objectUrl = URL.createObjectURL(blob);
+      const downloadLink = el('a');
+      downloadLink.href = objectUrl;
+      downloadLink.download = 'ramykeys-products.json';
+      document.body.append(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      onRefresh({ message: 'Data produk diekspor ke JSON.', type: 'success' });
+    } catch {
+      onRefresh({ message: 'Gagal mengekspor data produk.', type: 'error' });
+    }
+  });
+
+  const importInput = el('input');
+  importInput.type = 'file';
+  importInput.accept = '.json,application/json';
+  importInput.hidden = true;
+  importInput.addEventListener('change', async () => {
+    const [file] = importInput.files || [];
+    if (!file) return;
+
+    let raw;
+    try {
+      raw = await file.text();
+    } catch {
+      importInput.value = '';
+      onRefresh({ message: 'File JSON tidak dapat dibaca.', type: 'error' });
+      return;
+    }
+
+    const imported = parseProductsJson(raw);
+    if (!imported.ok) {
+      importInput.value = '';
+      onRefresh({ message: imported.error, type: 'error' });
+      return;
+    }
+
+    const result = onProductsChange(imported.products);
+    importInput.value = '';
+    if (!result.ok) {
+      onRefresh({
+        message: 'Gagal menyimpan data impor ke browser.',
+        type: 'error',
+      });
+      return;
+    }
+    onRefresh({ message: 'Data produk berhasil diimpor.', type: 'success' });
+  });
+
+  const importButton = el('button', 'btn btn--secondary', 'Impor JSON');
+  importButton.type = 'button';
+  importButton.addEventListener('click', () => importInput.click());
+
+  const resetButton = el('button', 'btn btn--secondary', 'Reset demo');
+  resetButton.type = 'button';
+  resetButton.addEventListener('click', () => {
+    const confirmed = window.confirm(
+      'Kembalikan ke 8 produk contoh? Perubahan Anda akan hilang.',
+    );
+    if (!confirmed) return;
+
+    const result = onProductsChange(PRODUCTS.map((product) => ({ ...product })));
+    if (!result.ok) {
+      onRefresh({
+        message: 'Gagal menyimpan data contoh ke browser.',
+        type: 'error',
+      });
+      return;
+    }
+    onRefresh({ message: 'Data contoh dipulihkan.', type: 'success' });
+  });
+
+  actions.append(addButton, exportButton, importButton, resetButton, importInput);
+
+  const productsSection = el('section', 'dashboard-products');
+  productsSection.append(
+    el('h2', 'dashboard-products__title', 'Daftar produk'),
+    renderProductTable(products, onProductsChange, onRefresh),
   );
 
-  const catalogLink = el('a', 'btn btn--secondary', 'Kembali ke Katalog');
-  catalogLink.href = '#/';
-  note.append(catalogLink);
-
-  section.append(summary, note);
+  section.append(
+    summary,
+    renderCategoryOverview(products, 'Kategori produk'),
+    actions,
+    productsSection,
+  );
   return section;
 }
 
@@ -431,7 +865,36 @@ function renderFooter() {
   return footer;
 }
 
-export function renderApp(root, { page, products }) {
+function renderNotice(notice, onDismissNotice) {
+  if (!notice) return null;
+
+  const type = notice.type === 'success' ? 'success' : 'error';
+  const notification = el('div', `app-notice app-notice--${type}`);
+  notification.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  notification.setAttribute(
+    'aria-live',
+    type === 'error' ? 'assertive' : 'polite',
+  );
+  notification.append(el('p', 'app-notice__message', notice.message));
+
+  const closeButton = el('button', 'btn btn--secondary', 'Tutup');
+  closeButton.type = 'button';
+  closeButton.addEventListener('click', onDismissNotice);
+  notification.append(closeButton);
+  return notification;
+}
+
+export function renderApp(
+  root,
+  {
+    page,
+    products,
+    notice,
+    onDismissNotice,
+    onProductsChange,
+    onRefresh,
+  },
+) {
   root.replaceChildren();
 
   const main = el('main', 'site-main');
@@ -439,12 +902,15 @@ export function renderApp(root, { page, products }) {
   main.tabIndex = -1;
 
   if (page === 'dashboard') {
-    main.append(renderDashboard(products));
+    main.append(renderDashboard(products, onProductsChange, onRefresh));
   } else {
     main.append(renderHero(products), renderCatalog(products));
   }
 
-  root.append(renderHeader(page), main, renderFooter());
+  root.append(renderHeader(page));
+  const notification = renderNotice(notice, onDismissNotice);
+  if (notification) root.append(notification);
+  root.append(main, renderFooter());
 
   document.title =
     page === 'dashboard'

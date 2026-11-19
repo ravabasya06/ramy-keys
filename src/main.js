@@ -4,19 +4,37 @@
  */
 
 import './style.css';
-import { loadProducts } from './store.js';
+import { loadProducts, saveProducts } from './store.js';
 import { renderApp } from './ui.js';
 
 const root = document.querySelector('#app');
+const initialState = loadProducts();
+let products = initialState.products;
+let notice = initialState.notice
+  ? { message: initialState.notice, type: 'error' }
+  : null;
 
 function currentPage() {
   return window.location.hash === '#/dashboard' ? 'dashboard' : 'catalog';
 }
 
-function render() {
+function render(nextNotice) {
+  if (nextNotice !== undefined) notice = nextNotice;
+
   renderApp(root, {
     page: currentPage(),
-    products: loadProducts(),
+    products,
+    notice,
+    onDismissNotice() {
+      notice = null;
+      render();
+    },
+    onProductsChange(nextProducts) {
+      const result = saveProducts(nextProducts);
+      if (result.ok) products = nextProducts;
+      return result;
+    },
+    onRefresh: render,
   });
 }
 

@@ -1,6 +1,5 @@
 /** Konfigurasi dan data contoh Ramy Keys. Seluruh data produk bersifat fiktif. */
-export const STORAGE_KEY = 'ramyKeys.products.v1';
-export const SCHEMA_VERSION = 1;
+export const STORAGE_KEY = 'ramykeys:products:v1';
 export const LOW_STOCK = 5;
 
 // Konfigurasi nomor tujuan nonrahasia; ini nomor dummy untuk demo.
@@ -96,6 +95,49 @@ export const PRODUCTS = [
     unggulan: false,
   },
 ];
+
+export function validateProduct(input) {
+  const errors = {};
+  const nama = String(input.nama ?? '').trim();
+  const kategori = String(input.kategori ?? '');
+  const hargaText = String(input.harga ?? '').trim();
+  const stokText = String(input.stok ?? '').trim();
+  const deskripsi = String(input.deskripsi ?? '');
+  const imageUrl = String(input.imageUrl ?? '').trim();
+
+  if (nama.length < 2 || nama.length > 80) {
+    errors.nama = 'Nama wajib diisi, 2–80 karakter.';
+  }
+  if (!CATEGORIES.includes(kategori)) {
+    errors.kategori = 'Pilih salah satu kategori.';
+  }
+
+  const harga = Number(hargaText);
+  if (!hargaText || !Number.isFinite(harga) || harga < 0 || !Number.isInteger(harga)) {
+    errors.harga = 'Harga harus berupa bilangan bulat 0 atau lebih.';
+  }
+
+  const stok = Number(stokText);
+  if (!stokText || !Number.isInteger(stok) || stok < 0) {
+    errors.stok = 'Stok harus berupa bilangan bulat 0 atau lebih.';
+  }
+  if (deskripsi.length > 300) {
+    errors.deskripsi = 'Deskripsi maksimal 300 karakter.';
+  }
+  if (
+    imageUrl &&
+    (!imageUrl.startsWith('/images/') ||
+      imageUrl.includes('..') ||
+      imageUrl.includes('\\'))
+  ) {
+    errors.imageUrl = 'Path gambar harus diawali /images/.';
+  }
+  if (typeof input.unggulan !== 'boolean') {
+    errors.unggulan = 'Status unggulan harus berupa pilihan ya atau tidak.';
+  }
+
+  return { valid: Object.keys(errors).length === 0, errors };
+}
 
 export function filterProducts(
   products,
