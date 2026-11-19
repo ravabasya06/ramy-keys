@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Ilustrasi aksesori keyboard">
-  <rect width="800" height="600" fill="#120b1f"/>
-  <path d="M236 190c0-54 44-98 98-98h130c54 0 98 44 98 98v72h-76v-72c0-12-10-22-22-22H334c-12 0-22 10-22 22v148c0 12 10 22 22 22h128c12 0 22-10 22-22v-34h76v34c0 54-44 98-98 98H334c-54 0-98-44-98-98z" fill="none" stroke="#c4b5fd" stroke-width="34" stroke-linejoin="round"/>
-  <rect x="448" y="154" width="88" height="68" rx="18" fill="#fde68a"/>
-  <text x="400" y="540" fill="#f4effc" font-family="system-ui,sans-serif" font-size="30" text-anchor="middle">AKSESORI</text>
+  <rect width="800" height="600" fill="#142338"/>
+  <circle cx="650" cy="145" r="95" fill="#294462"/>
+  <path d="M173 281c0-74 60-134 134-134h133c74 0 134 60 134 134v22h-77v-22c0-31-26-57-57-57H307c-31 0-57 26-57 57v71c0 31 26 57 57 57h133c31 0 57-26 57-57v-20h77v20c0 74-60 134-134 134H307c-74 0-134-60-134-134z" fill="none" stroke="#9bb3cd" stroke-width="31" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="517" y="189" width="96" height="70" rx="14" fill="#5279a6"/>
+  <path d="M189 298c8-39 39-66 78-72" fill="none" stroke="#dce6f0" stroke-width="8" stroke-linecap="round"/>
+  <text x="74" y="90" fill="#dce6f0" font-family="Georgia,serif" font-size="28">COILED CABLE / USB-C</text>
 </svg>

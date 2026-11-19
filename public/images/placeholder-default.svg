@@ -1,10 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Placeholder produk Ramy Keys">
-  <rect width="800" height="600" fill="#120b1f"/>
-  <rect x="170" y="154" width="460" height="292" rx="30" fill="#2a1f4d" stroke="#7c6bb0" stroke-width="8"/>
-  <g fill="#c4b5fd">
-    <rect x="210" y="194" width="74" height="58" rx="10"/><rect x="298" y="194" width="74" height="58" rx="10"/><rect x="386" y="194" width="74" height="58" rx="10"/><rect x="474" y="194" width="74" height="58" rx="10"/>
-    <rect x="210" y="266" width="74" height="58" rx="10"/><rect x="298" y="266" width="74" height="58" rx="10"/><rect x="386" y="266" width="74" height="58" rx="10"/><rect x="474" y="266" width="74" height="58" rx="10"/>
-    <rect x="250" y="338" width="300" height="58" rx="10"/>
+  <rect width="800" height="600" fill="#15243a"/>
+  <path d="M0 0h230v150H0z" fill="#385a80"/>
+  <path d="M800 600H574V450h226z" fill="#294361"/>
+  <g transform="rotate(-7 400 300)">
+    <rect x="177" y="164" width="446" height="272" rx="28" fill="#263d58"/>
+    <g fill="#c6d1dc">
+      <rect x="207" y="194" width="68" height="54" rx="8"/><rect x="285" y="194" width="68" height="54" rx="8"/><rect x="363" y="194" width="68" height="54" rx="8"/><rect x="441" y="194" width="68" height="54" rx="8"/><rect x="519" y="194" width="68" height="54" rx="8"/>
+      <rect x="207" y="260" width="68" height="54" rx="8"/><rect x="285" y="260" width="68" height="54" rx="8"/><rect x="363" y="260" width="68" height="54" rx="8"/><rect x="441" y="260" width="68" height="54" rx="8"/><rect x="519" y="260" width="68" height="54" rx="8"/>
+      <rect x="234" y="326" width="92" height="54" rx="8"/><rect x="336" y="326" width="226" height="54" rx="8"/>
+    </g>
+    <rect x="441" y="194" width="68" height="54" rx="8" fill="#4e74a1"/>
+    <rect x="336" y="326" width="226" height="54" rx="8" fill="#8ca8c6"/>
   </g>
-  <text x="400" y="510" fill="#f4effc" font-family="system-ui,sans-serif" font-size="30" text-anchor="middle">RAMY KEYS</text>
+  <text x="62" y="548" fill="#dce6f0" font-family="Georgia,serif" font-size="28">MADE FOR YOUR DESK.</text>
 </svg>

@@ -1,10 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Ilustrasi keyboard kit">
-  <rect width="800" height="600" fill="#120b1f"/>
-  <rect x="72" y="146" width="656" height="308" rx="28" fill="#2a1f4d" stroke="#7c6bb0" stroke-width="8"/>
-  <g fill="#c4b5fd">
-    <path d="M118 192h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74z"/>
-    <path d="M118 266h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74z"/>
-    <path d="M118 340h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74zm94 0h74v52h-74z"/>
+  <rect width="800" height="600" fill="#101b2c"/>
+  <circle cx="672" cy="122" r="118" fill="#2b4564"/>
+  <path d="M0 470c143-83 275-70 411-8s263 67 389 7v131H0z" fill="#17263a"/>
+  <g transform="rotate(-8 400 300)">
+    <rect x="112" y="171" width="576" height="282" rx="28" fill="#263d58"/>
+    <rect x="126" y="184" width="548" height="252" rx="18" fill="#0c1726" stroke="#526982" stroke-width="3"/>
+    <g fill="#c6d1dc">
+      <rect x="153" y="211" width="76" height="48" rx="7"/><rect x="239" y="211" width="76" height="48" rx="7"/><rect x="325" y="211" width="76" height="48" rx="7"/><rect x="411" y="211" width="76" height="48" rx="7"/><rect x="497" y="211" width="76" height="48" rx="7"/><rect x="583" y="211" width="62" height="48" rx="7"/>
+      <rect x="153" y="271" width="76" height="48" rx="7"/><rect x="239" y="271" width="76" height="48" rx="7"/><rect x="325" y="271" width="76" height="48" rx="7"/><rect x="411" y="271" width="76" height="48" rx="7"/><rect x="497" y="271" width="76" height="48" rx="7"/><rect x="583" y="271" width="62" height="48" rx="7"/>
+      <rect x="153" y="331" width="92" height="48" rx="7"/><rect x="255" y="331" width="280" height="48" rx="7"/><rect x="545" y="331" width="100" height="48" rx="7"/>
+    </g>
+    <rect x="239" y="211" width="76" height="48" rx="7" fill="#4e74a1"/>
+    <rect x="497" y="271" width="76" height="48" rx="7" fill="#8ca8c6"/>
+    <rect x="255" y="331" width="280" height="48" rx="7" fill="#7598be"/>
   </g>
-  <text x="400" y="510" fill="#f4effc" font-family="system-ui,sans-serif" font-size="30" text-anchor="middle">KEYBOARD KIT</text>
+  <text x="72" y="92" fill="#dce6f0" font-family="Georgia,serif" font-size="26">01 / BAREBONE</text>
 </svg>

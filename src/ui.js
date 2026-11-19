@@ -59,6 +59,14 @@ function navLink(label, wideLabel, href, active) {
 
 function renderHeader(page) {
   const header = el('header', 'site-header');
+  const ribbon = el('div', 'site-ribbon');
+  const ribbonInner = el('div', 'container site-ribbon__inner');
+  ribbonInner.append(
+    el('span', null, 'MECHANICAL KEYBOARD · RAMY KEYS STUDIO'),
+    el('span', null, 'PESAN LANGSUNG VIA WHATSAPP ↗'),
+  );
+  ribbon.append(ribbonInner);
+
   const nav = el('nav', 'navbar container');
   nav.setAttribute('aria-label', 'Navigasi utama');
 
@@ -74,8 +82,15 @@ function renderHeader(page) {
     navLink('Dashboard', 'Dashboard Demo', '#/dashboard', page === 'dashboard'),
   );
 
-  nav.append(brand, links);
-  header.append(nav);
+  const cta = el(
+    'a',
+    'navbar__cta',
+    page === 'catalog' ? 'Pilih produk' : 'Lihat katalog',
+  );
+  cta.href = page === 'catalog' ? '#katalog' : '#/';
+
+  nav.append(brand, links, cta);
+  header.append(ribbon, nav);
   return header;
 }
 
@@ -86,20 +101,20 @@ function renderHero(products) {
   const copy = el('div', 'hero__copy');
 
   copy.append(
-    el('p', 'hero__eyebrow', 'Ramy Keys · Keyboard & aksesori'),
+    el('p', 'hero__eyebrow', 'RANGKAIAN 01 · UNTUK MEJA KERJAMU'),
     el(
       'h1',
       'hero__title',
-      'Mechanical keyboard & aksesori untuk setiap gaya mengetik.',
+      'Temukan feel mengetik yang terasa milikmu.',
     ),
     el(
       'p',
       'hero__text',
-      'Kit, prebuilt, switch, dan keycaps — siap dipesan lewat WhatsApp.',
+      'Dari keyboard kit sampai switch dan keycaps, pilih detail kecil yang mengubah seluruh ritme kerja.',
     ),
   );
 
-  const cta = el('a', 'btn btn--primary hero__cta', 'Lihat Katalog');
+  const cta = el('a', 'btn btn--primary hero__cta', 'Jelajahi koleksi');
   cta.href = '#katalog';
   copy.append(
     cta,
@@ -119,13 +134,23 @@ function renderKeyboardIllustration() {
   const illustration = el('div', 'keyboard-illustration');
   illustration.setAttribute('aria-hidden', 'true');
 
+  const caption = el('div', 'keyboard-illustration__caption');
+  caption.append(
+    el('span', 'keyboard-illustration__series', 'RAMY 65'),
+    el('span', 'keyboard-illustration__detail', 'ALUMINUM · HOT-SWAP'),
+  );
+
   const board = el('div', 'keyboard-illustration__board');
   const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
   for (const [rowIndex, letters] of rows.entries()) {
     const row = el('div', `keyboard-illustration__row keyboard-illustration__row--${rowIndex + 1}`);
     for (const letter of letters) {
-      row.append(el('span', 'keyboard-illustration__key', letter));
+      const key = el('span', 'keyboard-illustration__key', letter);
+      if (['Q', 'E', 'R', 'Y', 'C', 'V'].includes(letter)) {
+        key.classList.add('keyboard-illustration__key--accent');
+      }
+      row.append(key);
     }
     board.append(row);
   }
@@ -137,7 +162,7 @@ function renderKeyboardIllustration() {
     el('span', 'keyboard-illustration__key keyboard-illustration__key--wide', 'FN'),
   );
   board.append(bottomRow);
-  illustration.append(board);
+  illustration.append(caption, board);
   return illustration;
 }
 
@@ -240,7 +265,12 @@ function renderCatalog(products) {
 
   const head = el('div', 'section__head');
   head.append(
-    el('h2', 'section__title', 'Produk Ramy Keys'),
+    el('h2', 'section__title', 'Gear pilihan, tanpa tebakan.'),
+    el(
+      'p',
+      'section__meta',
+      `${products.length} item · dikurasi untuk setup berikutnya`,
+    ),
   );
 
   const toolbar = el('div', 'catalog-toolbar');
@@ -341,7 +371,7 @@ function createOption(value, label) {
   return option;
 }
 
-function renderCategoryOverview(products, title = 'Jelajahi kategori') {
+function renderCategoryOverview(products, title = 'Pilih jalur eksplorasi') {
   const overview = el('div', 'category-overview');
   overview.append(el('h3', 'category-overview__title', title));
 
@@ -850,17 +880,21 @@ function renderDashboard(products, onProductsChange, onRefresh) {
 
 function renderFooter() {
   const footer = el('footer', 'site-footer');
+  const footerInner = el('div', 'container site-footer__inner');
+  const footerBrand = el('a', 'site-footer__brand', 'Ramy Keys');
+  footerBrand.href = '#/';
+  const footerCopy = el('div', 'site-footer__copy');
   footer.append(
-    el(
-      'p',
-      'site-footer__text',
-      'Ramy Keys — katalog demo latihan. Data contoh fiktif.',
-    ),
-    el(
-      'p',
-      'site-footer__text',
-      'Nomor WhatsApp pada tombol pesan adalah nomor dummy.',
-    ),
+    footerInner,
+  );
+  footerCopy.append(
+    el('p', 'site-footer__text', 'Keyboard gear untuk ritme harianmu.'),
+    el('p', 'site-footer__text', 'Produk dan stok adalah data demo fiktif.'),
+  );
+  footerInner.append(
+    footerBrand,
+    footerCopy,
+    el('p', 'site-footer__meta', 'PESAN VIA WHATSAPP · RAMY KEYS'),
   );
   return footer;
 }
