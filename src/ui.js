@@ -7,6 +7,7 @@ import {
   CATEGORIES,
   buildWhatsAppUrl,
   filterProducts,
+  getProductImageCandidates,
   LOW_STOCK,
   PRODUCTS,
   WA_NUMBER,
@@ -179,18 +180,17 @@ function createProductCard(product) {
   if (product.stok === 0) badges.append(createBadge('Habis', 'out'));
 
   const image = el('img', 'card__image');
-  image.src = assetUrl(product.imageUrl);
+  const imageCandidates = getProductImageCandidates(product).map(assetUrl);
+  let imageIndex = 0;
   image.alt = product.nama;
   image.width = 800;
   image.height = 600;
   image.loading = 'lazy';
-  image.addEventListener(
-    'error',
-    () => {
-      image.src = assetUrl('/images/placeholder-default.svg');
-    },
-    { once: true },
-  );
+  image.addEventListener('error', () => {
+    imageIndex += 1;
+    if (imageIndex < imageCandidates.length) image.src = imageCandidates[imageIndex];
+  });
+  image.src = imageCandidates[imageIndex];
 
   media.append(image, badges);
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildWhatsAppUrl,
   filterProducts,
+  getProductImageCandidates,
   PRODUCTS,
   validateProduct,
 } from './products.js';
@@ -62,6 +63,43 @@ describe('filterProducts', () => {
     const original = [...PRODUCTS];
     filterProducts(PRODUCTS, { sort: 'price-asc' });
     expect(PRODUCTS).toEqual(original);
+  });
+});
+
+describe('getProductImageCandidates', () => {
+  it('prefers a product-specific image and retains category placeholders', () => {
+    expect(getProductImageCandidates(PRODUCTS[3])).toEqual([
+      '/images/products/ramy-compact-60-prebuilt.png',
+      '/images/placeholder-prebuilt.svg',
+      '/images/placeholder-default.svg',
+    ]);
+  });
+
+  it('keeps a custom image first and provides local fallback options', () => {
+    expect(
+      getProductImageCandidates({
+        ...PRODUCTS[0],
+        imageUrl: '/images/custom-keyboard.png',
+      }),
+    ).toEqual([
+      '/images/custom-keyboard.png',
+      '/images/products/ramy65-aluminum-kit.png',
+      '/images/placeholder-kit.svg',
+      '/images/placeholder-default.svg',
+    ]);
+  });
+
+  it('uses the category placeholder when an unknown product has only a generic fallback', () => {
+    expect(
+      getProductImageCandidates({
+        id: 'custom-item',
+        kategori: 'Switch',
+        imageUrl: '/images/placeholder-default.svg',
+      }),
+    ).toEqual([
+      '/images/placeholder-switch.svg',
+      '/images/placeholder-default.svg',
+    ]);
   });
 });
 
