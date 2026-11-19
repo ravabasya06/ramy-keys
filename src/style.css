@@ -164,6 +164,28 @@ a {
   padding-inline: 20px;
 }
 
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 .site-header {
   position: sticky;
   top: 0;
@@ -226,6 +248,12 @@ a {
   color: var(--color-on-primary);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
+  transition: transform 180ms ease;
+}
+
+.brand:hover .brand__mark,
+.brand:focus-visible .brand__mark {
+  transform: rotate(-4deg) scale(1.04);
 }
 
 .brand__mark .fa-icon {
@@ -295,6 +323,19 @@ a {
   transform: translateY(-1px);
 }
 
+.navbar__cta .fa-icon,
+.hero__cta .fa-icon {
+  transition: transform 180ms ease;
+}
+
+.navbar__cta:hover .fa-icon {
+  transform: translateX(3px);
+}
+
+.hero__cta:hover .fa-icon {
+  transform: translateY(3px);
+}
+
 .app-notice {
   display: flex;
   align-items: center;
@@ -309,6 +350,7 @@ a {
   border-left: 4px solid var(--color-danger);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-card);
+  animation: rise-in 260ms ease-out both;
 }
 
 .app-notice--success {
@@ -421,6 +463,26 @@ a {
   max-width: 660px;
 }
 
+.hero__copy > * {
+  animation: rise-in 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.hero__copy > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.hero__copy > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.hero__copy > :nth-child(4) {
+  animation-delay: 210ms;
+}
+
+.hero__copy > :nth-child(5) {
+  animation-delay: 280ms;
+}
+
 .hero__eyebrow {
   display: flex;
   align-items: center;
@@ -485,6 +547,7 @@ a {
 
 .keyboard-illustration {
   display: none;
+  animation: fade-in 700ms ease-out 160ms both;
 }
 
 .keyboard-illustration__caption {
@@ -599,6 +662,25 @@ a {
   color: var(--color-text-muted);
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
+}
+
+#katalog .section__head,
+#katalog .catalog-toolbar,
+#katalog .category-overview,
+#katalog .catalog-results__status {
+  animation: rise-in 420ms ease-out both;
+}
+
+#katalog .catalog-toolbar {
+  animation-delay: 70ms;
+}
+
+#katalog .category-overview {
+  animation-delay: 140ms;
+}
+
+#katalog .catalog-results__status {
+  animation-delay: 210ms;
 }
 
 .catalog-toolbar {
@@ -891,6 +973,15 @@ a {
   border: 1px solid var(--color-border);
   border-top: 3px solid var(--color-primary);
   border-radius: var(--radius-sm);
+  animation: rise-in 420ms ease-out both;
+}
+
+.summary-card:nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.summary-card:nth-child(3) {
+  animation-delay: 140ms;
 }
 
 .summary-card__label {
@@ -937,6 +1028,10 @@ a {
 
 .dashboard-actions .btn {
   width: 100%;
+}
+
+.dashboard-actions .btn:hover {
+  transform: translateY(-2px);
 }
 
 .dashboard-products {
@@ -1653,6 +1748,7 @@ textarea.form-field__control {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
   }
 }
