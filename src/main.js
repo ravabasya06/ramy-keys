@@ -3,6 +3,7 @@
  * Router hash sederhana: "#/" untuk katalog dan "#/dashboard" untuk dashboard.
  */
 
+import '@fortawesome/fontawesome-free/css/all.min.css';
 import './style.css';
 import { loadProducts, saveProducts } from './store.js';
 import { renderApp } from './ui.js';

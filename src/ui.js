@@ -37,6 +37,16 @@ function assetUrl(path) {
   return `${import.meta.env.BASE_URL}${clean}`;
 }
 
+function faIcon(iconClass) {
+  const icon = el('i', `fa-icon ${iconClass}`);
+  icon.setAttribute('aria-hidden', 'true');
+  return icon;
+}
+
+function appendIconLabel(node, iconClass, label) {
+  node.append(faIcon(iconClass), el('span', null, label));
+}
+
 function navLink(label, wideLabel, href, active) {
   const link = el('a', 'navbar__link');
   link.href = href;
@@ -62,9 +72,11 @@ function renderHeader(page) {
   const header = el('header', 'site-header');
   const ribbon = el('div', 'site-ribbon');
   const ribbonInner = el('div', 'container site-ribbon__inner');
+  const whatsappRibbon = el('span', 'site-ribbon__whatsapp');
+  appendIconLabel(whatsappRibbon, 'fa-brands fa-whatsapp', 'PESAN LANGSUNG VIA WHATSAPP');
   ribbonInner.append(
     el('span', null, 'MECHANICAL KEYBOARD · RAMY KEYS STUDIO'),
-    el('span', null, 'PESAN LANGSUNG VIA WHATSAPP ↗'),
+    whatsappRibbon,
   );
   ribbon.append(ribbonInner);
 
@@ -73,8 +85,9 @@ function renderHeader(page) {
 
   const brand = el('a', 'brand');
   brand.href = '#/';
-  const mark = el('span', 'brand__mark', 'RK');
+  const mark = el('span', 'brand__mark');
   mark.setAttribute('aria-hidden', 'true');
+  mark.append(faIcon('fa-solid fa-keyboard'));
   brand.append(mark, el('span', 'brand__name', 'Ramy Keys'));
 
   const links = el('div', 'navbar__links');
@@ -83,10 +96,10 @@ function renderHeader(page) {
     navLink('Dashboard', 'Dashboard Demo', '#/dashboard', page === 'dashboard'),
   );
 
-  const cta = el(
-    'a',
-    'navbar__cta',
-    page === 'catalog' ? 'Pilih produk' : 'Lihat katalog',
+  const cta = el('a', 'navbar__cta');
+  cta.append(
+    el('span', null, page === 'catalog' ? 'Pilih produk' : 'Lihat katalog'),
+    faIcon('fa-solid fa-arrow-right'),
   );
   cta.href = page === 'catalog' ? '#katalog' : '#/';
 
@@ -115,7 +128,8 @@ function renderHero(products) {
     ),
   );
 
-  const cta = el('a', 'btn btn--primary hero__cta', 'Jelajahi koleksi');
+  const cta = el('a', 'btn btn--primary hero__cta');
+  cta.append(el('span', null, 'Jelajahi koleksi'), faIcon('fa-solid fa-arrow-down'));
   cta.href = '#katalog';
   copy.append(
     cta,
@@ -168,7 +182,13 @@ function renderKeyboardIllustration() {
 }
 
 function createBadge(text, variant) {
-  return el('span', `card__badge card__badge--${variant}`, text);
+  const badge = el('span', `card__badge card__badge--${variant}`);
+  if (variant === 'featured') {
+    appendIconLabel(badge, 'fa-solid fa-star', text);
+  } else {
+    badge.textContent = text;
+  }
+  return badge;
 }
 
 function createProductCard(product) {
@@ -176,7 +196,7 @@ function createProductCard(product) {
   const media = el('div', 'card__media');
   const badges = el('div', 'card__badges');
 
-  if (product.unggulan) badges.append(createBadge('★ Unggulan', 'featured'));
+  if (product.unggulan) badges.append(createBadge('Unggulan', 'featured'));
   if (product.stok === 0) badges.append(createBadge('Habis', 'out'));
 
   const image = el('img', 'card__image');
@@ -212,7 +232,8 @@ function createProductCard(product) {
   body.append(el('p', stockClass, stockText));
 
   if (product.stok > 0) {
-    const link = el('a', 'btn btn--wa card__action', 'Pesan via WhatsApp');
+    const link = el('a', 'btn btn--wa card__action');
+    appendIconLabel(link, 'fa-brands fa-whatsapp', 'Pesan via WhatsApp');
     link.href = buildWhatsAppUrl(WA_NUMBER, product);
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
@@ -377,11 +398,19 @@ function renderCategoryOverview(products, title = 'Pilih jalur eksplorasi') {
 
   const categories = el('ul', 'category-list');
   categories.setAttribute('aria-label', 'Kategori produk');
+  const categoryIcons = {
+    'Keyboard Kit': 'fa-keyboard',
+    'Prebuilt Keyboard': 'fa-keyboard',
+    Switch: 'fa-toggle-on',
+    Keycaps: 'fa-key',
+    Aksesori: 'fa-plug',
+  };
 
   for (const category of CATEGORIES) {
     const count = products.filter((product) => product.kategori === category).length;
     const item = el('li', 'category-chip');
     item.append(
+      faIcon(`category-chip__icon fa-solid ${categoryIcons[category]}`),
       el('span', 'category-chip__name', category),
       el('span', 'category-chip__count', `${count} produk`),
     );
@@ -392,10 +421,15 @@ function renderCategoryOverview(products, title = 'Pilih jalur eksplorasi') {
   return overview;
 }
 
-function renderSummaryCard(label, value, note) {
+function renderSummaryCard(label, value, note, iconClass) {
   const card = el('div', 'summary-card');
-  card.append(
+  const heading = el('div', 'summary-card__heading');
+  heading.append(
+    faIcon(`summary-card__icon ${iconClass}`),
     el('p', 'summary-card__label', label),
+  );
+  card.append(
+    heading,
     el('p', 'summary-card__value', String(value)),
     el('p', 'summary-card__note', note),
   );
@@ -535,10 +569,12 @@ function openProductForm(products, product, trigger, onProductsChange, onRefresh
   formMessage.hidden = true;
 
   const actions = el('div', 'product-form__actions');
-  const cancelButton = el('button', 'btn btn--secondary', 'Batal');
+  const cancelButton = el('button', 'btn btn--secondary');
+  appendIconLabel(cancelButton, 'fa-solid fa-xmark', 'Batal');
   cancelButton.type = 'button';
   cancelButton.addEventListener('click', () => dialog.close());
-  const saveButton = el('button', 'btn btn--primary', 'Simpan');
+  const saveButton = el('button', 'btn btn--primary');
+  appendIconLabel(saveButton, 'fa-solid fa-floppy-disk', 'Simpan');
   saveButton.type = 'submit';
   actions.append(cancelButton, saveButton);
 
@@ -710,14 +746,16 @@ function renderProductTable(products, onProductsChange, onRefresh) {
 
     const actionsCell = addCell('Aksi', '');
     const actions = el('div', 'dashboard-table__actions');
-    const editButton = el('button', 'btn btn--secondary', 'Ubah');
+    const editButton = el('button', 'btn btn--secondary');
+    appendIconLabel(editButton, 'fa-solid fa-pen-to-square', 'Ubah');
     editButton.type = 'button';
     editButton.setAttribute('aria-label', `Ubah ${product.nama}`);
     editButton.addEventListener('click', () => {
       openProductForm(products, product, editButton, onProductsChange, onRefresh);
     });
 
-    const deleteButton = el('button', 'btn btn--danger', 'Hapus');
+    const deleteButton = el('button', 'btn btn--danger');
+    appendIconLabel(deleteButton, 'fa-solid fa-trash-can', 'Hapus');
     deleteButton.type = 'button';
     deleteButton.setAttribute('aria-label', `Hapus ${product.nama}`);
     deleteButton.addEventListener('click', () => {
@@ -753,8 +791,10 @@ function renderDashboard(products, onProductsChange, onRefresh) {
   const section = el('section', 'dashboard container');
 
   const banner = el('div', 'banner');
+  const bannerIcon = el('span', 'banner__icon');
+  bannerIcon.append(faIcon('fa-solid fa-circle-info'));
   banner.append(
-    el('span', 'banner__icon', '(!)'),
+    bannerIcon,
     el(
       'span',
       'banner__text',
@@ -769,19 +809,36 @@ function renderDashboard(products, onProductsChange, onRefresh) {
 
   const summary = el('div', 'summary-grid');
   summary.append(
-    renderSummaryCard('Total produk', stats.totalProducts, 'item di katalog'),
-    renderSummaryCard('Total stok', stats.totalStock, 'unit semua produk'),
-    renderSummaryCard('Stok habis', stats.outOfStock, 'produk bernilai 0'),
+    renderSummaryCard(
+      'Total produk',
+      stats.totalProducts,
+      'item di katalog',
+      'fa-solid fa-boxes-stacked',
+    ),
+    renderSummaryCard(
+      'Total stok',
+      stats.totalStock,
+      'unit semua produk',
+      'fa-solid fa-box',
+    ),
+    renderSummaryCard(
+      'Stok habis',
+      stats.outOfStock,
+      'produk bernilai 0',
+      'fa-solid fa-box-open',
+    ),
   );
 
   const actions = el('div', 'dashboard-actions');
-  const addButton = el('button', 'btn btn--primary', 'Tambah produk');
+  const addButton = el('button', 'btn btn--primary');
+  appendIconLabel(addButton, 'fa-solid fa-plus', 'Tambah produk');
   addButton.type = 'button';
   addButton.addEventListener('click', () => {
     openProductForm(products, null, addButton, onProductsChange, onRefresh);
   });
 
-  const exportButton = el('button', 'btn btn--secondary', 'Ekspor JSON');
+  const exportButton = el('button', 'btn btn--secondary');
+  appendIconLabel(exportButton, 'fa-solid fa-file-export', 'Ekspor JSON');
   exportButton.type = 'button';
   exportButton.addEventListener('click', () => {
     try {
@@ -838,11 +895,13 @@ function renderDashboard(products, onProductsChange, onRefresh) {
     onRefresh({ message: 'Data produk berhasil diimpor.', type: 'success' });
   });
 
-  const importButton = el('button', 'btn btn--secondary', 'Impor JSON');
+  const importButton = el('button', 'btn btn--secondary');
+  appendIconLabel(importButton, 'fa-solid fa-file-import', 'Impor JSON');
   importButton.type = 'button';
   importButton.addEventListener('click', () => importInput.click());
 
-  const resetButton = el('button', 'btn btn--secondary', 'Reset demo');
+  const resetButton = el('button', 'btn btn--secondary');
+  appendIconLabel(resetButton, 'fa-solid fa-arrow-rotate-left', 'Reset demo');
   resetButton.type = 'button';
   resetButton.addEventListener('click', () => {
     const confirmed = window.confirm(
@@ -881,8 +940,9 @@ function renderDashboard(products, onProductsChange, onRefresh) {
 function renderFooter() {
   const footer = el('footer', 'site-footer');
   const footerInner = el('div', 'container site-footer__inner');
-  const footerBrand = el('a', 'site-footer__brand', 'Ramy Keys');
+  const footerBrand = el('a', 'site-footer__brand');
   footerBrand.href = '#/';
+  appendIconLabel(footerBrand, 'fa-solid fa-keyboard', 'Ramy Keys');
   const footerCopy = el('div', 'site-footer__copy');
   footer.append(
     footerInner,
@@ -891,10 +951,12 @@ function renderFooter() {
     el('p', 'site-footer__text', 'Keyboard gear untuk ritme harianmu.'),
     el('p', 'site-footer__text', 'Produk dan stok adalah data demo fiktif.'),
   );
+  const footerMeta = el('p', 'site-footer__meta');
+  appendIconLabel(footerMeta, 'fa-brands fa-whatsapp', 'PESAN VIA WHATSAPP · RAMY KEYS');
   footerInner.append(
     footerBrand,
     footerCopy,
-    el('p', 'site-footer__meta', 'PESAN VIA WHATSAPP · RAMY KEYS'),
+    footerMeta,
   );
   return footer;
 }
