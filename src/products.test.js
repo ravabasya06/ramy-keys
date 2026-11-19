@@ -30,6 +30,27 @@ describe('filterProducts', () => {
       .toEqual(['p-005', 'p-006']);
   });
 
+  it('filters inclusive price bounds together with stock and featured status', () => {
+    expect(
+      filterProducts(PRODUCTS, {
+        minPrice: 185000,
+        maxPrice: 420000,
+        stock: 'available',
+        featured: true,
+      }).map((p) => p.id),
+    ).toEqual(['p-005']);
+  });
+
+  it('can isolate out-of-stock products and accepts a zero minimum price', () => {
+    expect(
+      filterProducts(PRODUCTS, {
+        minPrice: 0,
+        maxPrice: 1000000,
+        stock: 'out',
+      }).map((p) => p.id),
+    ).toEqual(['p-004']);
+  });
+
   it('combines search, category, and sorting', () => {
     expect(
       filterProducts(PRODUCTS, {

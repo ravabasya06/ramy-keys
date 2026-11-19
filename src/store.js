@@ -6,6 +6,8 @@
 import { PRODUCTS, STORAGE_KEY, validateProduct } from './products.js';
 
 const CORRUPT_DATA_NOTICE = 'Data tersimpan rusak, data contoh dimuat ulang.';
+export const WISHLIST_STORAGE_KEY = 'ramykeys:wishlist:v1';
+export const COMPARISON_STORAGE_KEY = 'ramykeys:comparison:v1';
 
 function cloneProducts(products) {
   return products.map((product) => ({ ...product }));
@@ -22,6 +24,61 @@ function normalizeProducts(products) {
     imageUrl: product.imageUrl ?? '',
     unggulan: product.unggulan,
   }));
+}
+
+export function loadProductIdList(key, validProductIds) {
+  let raw;
+  try {
+    raw = localStorage.getItem(key);
+  } catch {
+    return {
+      ids: [],
+      notice: 'Daftar produk tersimpan tidak dapat dibaca dari browser.',
+    };
+  }
+
+  if (raw === null) return { ids: [], notice: null };
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return recoverProductIdList(key, 'Daftar produk tersimpan rusak.');
+  }
+
+  if (
+    !Array.isArray(parsed) ||
+    parsed.some((id) => typeof id !== 'string' || id.trim().length === 0)
+  ) {
+    return recoverProductIdList(key, 'Daftar produk tersimpan rusak.');
+  }
+
+  const ids = [...new Set(parsed)].filter((id) => validProductIds.has(id));
+  return { ids, notice: null };
+}
+
+function recoverProductIdList(key, notice) {
+  const result = saveProductIdList(key, []);
+  return {
+    ids: [],
+    notice: result.ok ? `${notice} Daftar dikosongkan.` : `${notice} Gagal memulihkan daftar.`,
+  };
+}
+
+export function saveProductIdList(key, ids) {
+  if (
+    !Array.isArray(ids) ||
+    ids.some((id) => typeof id !== 'string' || id.trim().length === 0)
+  ) {
+    return { ok: false, error: new TypeError('Daftar harus berisi ID produk yang valid.') };
+  }
+
+  try {
+    localStorage.setItem(key, JSON.stringify([...new Set(ids)]));
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error };
+  }
 }
 
 export function validateProducts(products) {

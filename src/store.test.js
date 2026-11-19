@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PRODUCTS, STORAGE_KEY } from './products.js';
 import {
+  loadProductIdList,
   loadProducts,
   parseProductsJson,
+  saveProductIdList,
   saveProducts,
   validateProducts,
+  WISHLIST_STORAGE_KEY,
 } from './store.js';
 
 let stored;
@@ -70,6 +73,40 @@ describe('JSON import validation', () => {
     expect(parseProductsJson(JSON.stringify(PRODUCTS))).toEqual({
       ok: true,
       products: PRODUCTS,
+    });
+  });
+
+  describe('saved product lists', () => {
+    it('deduplicates stored IDs and ignores products no longer in the catalog', () => {
+      stored.set(
+        WISHLIST_STORAGE_KEY,
+        JSON.stringify(['p-001', 'p-missing', 'p-001']),
+      );
+
+      expect(loadProductIdList(WISHLIST_STORAGE_KEY, new Set(['p-001']))).toEqual({
+        ids: ['p-001'],
+        notice: null,
+      });
+    });
+
+    it('recovers a corrupt saved list and reports the recovery', () => {
+      stored.set(WISHLIST_STORAGE_KEY, '{broken');
+
+      const result = loadProductIdList(WISHLIST_STORAGE_KEY, new Set());
+
+      expect(result.ids).toEqual([]);
+      expect(result.notice).toMatch(/Daftar produk tersimpan rusak/);
+      expect(stored.get(WISHLIST_STORAGE_KEY)).toBe('[]');
+    });
+
+    it('persists unique IDs and rejects invalid list entries', () => {
+      expect(
+        saveProductIdList(WISHLIST_STORAGE_KEY, ['p-001', 'p-001']),
+      ).toEqual({ ok: true });
+      expect(stored.get(WISHLIST_STORAGE_KEY)).toBe('["p-001"]');
+      expect(saveProductIdList(WISHLIST_STORAGE_KEY, [''])).toMatchObject({
+        ok: false,
+      });
     });
   });
 

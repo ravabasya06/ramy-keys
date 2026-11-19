@@ -178,11 +178,23 @@ export function validateProduct(input) {
 
 export function filterProducts(
   products,
-  { search = '', category = 'all', sort = 'default' } = {},
+  {
+    search = '',
+    category = 'all',
+    sort = 'default',
+    stock = 'all',
+    minPrice = '',
+    maxPrice = '',
+    featured = false,
+  } = {},
 ) {
   const query = String(search ?? '')
     .trim()
     .toLocaleLowerCase('id');
+  const minimum = minPrice === '' || minPrice === null ? null : Number(minPrice);
+  const maximum = maxPrice === '' || maxPrice === null ? null : Number(maxPrice);
+  const hasMinimum = Number.isFinite(minimum) && minimum >= 0;
+  const hasMaximum = Number.isFinite(maximum) && maximum >= 0;
 
   const filtered = products.filter((product) => {
     const matchesSearch =
@@ -193,8 +205,24 @@ export function filterProducts(
           .includes(query),
       );
     const matchesCategory = category === 'all' || product.kategori === category;
+    const matchesStock =
+      stock === 'available'
+        ? product.stok > 0
+        : stock === 'out'
+          ? product.stok === 0
+          : true;
+    const matchesPrice =
+      (!hasMinimum || product.harga >= minimum) &&
+      (!hasMaximum || product.harga <= maximum);
+    const matchesFeatured = !featured || product.unggulan;
 
-    return matchesSearch && matchesCategory;
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesStock &&
+      matchesPrice &&
+      matchesFeatured
+    );
   });
 
   switch (sort) {

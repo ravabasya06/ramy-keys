@@ -5,7 +5,10 @@ Ramy Keys adalah demo katalog statis untuk produk mechanical keyboard dan akseso
 ## Fitur
 
 - Katalog 8 produk contoh, harga Rupiah, informasi stok, dan gambar lokal dengan fallback placeholder SVG.
-- Pencarian tanpa membedakan huruf besar/kecil pada nama, kategori, dan deskripsi; filter kategori; serta pengurutan harga atau nama. Filter dapat digunakan bersama.
+- Halaman detail produk di `#/produk/{id}` yang menampilkan gambar, kategori, deskripsi, harga, stok, fakta produk yang tersedia, produk sejenis, dan tautan pemesanan WhatsApp. ID yang tidak ditemukan menampilkan keadaan produk tidak tersedia.
+- Halaman Panduan (`#/panduan`), FAQ (`#/faq`), dan Tentang (`#/tentang`) yang menjelaskan cara menjelajah katalog serta batasan data demo.
+- Katalog dengan pencarian case-insensitive, filter kategori, ketersediaan stok, rentang harga, produk unggulan, dan pengurutan harga atau nama. Filter dapat digunakan bersama.
+- Wishlist (`#/wishlist`) dan perbandingan (`#/perbandingan`, maksimal 3 produk) dengan data ID produk yang disimpan di `localStorage` browser.
 - Tombol pemesanan yang membuka WhatsApp dengan pesan produk terisi. Nomor default adalah nomor dummy; konfigurasi `WA_NUMBER` berada di `src/products.js`.
 - Dashboard demo di `#/dashboard` untuk melihat ringkasan stok dan kategori serta menambah, mengubah, dan menghapus produk. Form memvalidasi nama, kategori, harga, stok, deskripsi, dan path gambar.
 - Penyimpanan data pada `localStorage` dengan key `ramykeys:products:v1`, sehingga perubahan dashboard langsung digunakan katalog pada browser yang sama.
@@ -28,7 +31,7 @@ npm install
 npm run dev
 ```
 
-Buka alamat lokal yang ditampilkan Vite di terminal. Aplikasi dimulai di katalog; dashboard dapat dibuka melalui tautan Dashboard atau dengan menambahkan `#/dashboard` pada alamat aplikasi.
+Buka alamat lokal yang ditampilkan Vite di terminal. Aplikasi dimulai di katalog; navigasi header dan footer menyediakan halaman Panduan, FAQ, Tentang, Wishlist, Perbandingan, dan Dashboard. Detail produk dibuka melalui tautan “Lihat detail” pada kartu produk.
 
 ## Test dan build
 
@@ -56,7 +59,7 @@ Jalankan `npm run build` terlebih dahulu sebelum `npm run preview`.
 
 Build menghasilkan situs statis di direktori `dist/`. Deploy isi direktori tersebut ke layanan hosting statis yang dapat menyajikan `index.html` dan asetnya. Konfigurasi Vite menggunakan base relatif agar build dapat ditempatkan di root maupun subpath. Setelah deployment, uji katalog, `#/dashboard`, gambar lokal, serta penyimpanan di browser pada alamat situs tersebut.
 
-Tidak ada server aplikasi yang perlu dijalankan untuk deployment ini. Karena data disimpan di browser, perubahan yang tersimpan di alamat deployment tidak otomatis tersedia di alamat lain.
+Tidak ada server aplikasi yang perlu dijalankan untuk deployment ini. Karena data produk, wishlist, dan perbandingan disimpan di browser, data tidak otomatis tersedia di browser, perangkat, atau origin lain.
 
 ## Keterbatasan
 

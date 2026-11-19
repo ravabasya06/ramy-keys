@@ -21,6 +21,96 @@ const currencyFormatter = new Intl.NumberFormat('id-ID', {
   maximumFractionDigits: 0,
 });
 
+const MAX_COMPARISON_PRODUCTS = 3;
+
+const INFO_PAGES = {
+  guide: {
+    title: 'Panduan memilih keyboard',
+    intro:
+      'Mulai dari cara kamu memakai keyboard, lalu periksa kecocokan produk sebelum memutuskan.',
+    sections: [
+      {
+        title: '1. Tentukan format yang nyaman',
+        text:
+          'Keyboard berukuran ringkas menyisakan lebih banyak ruang di meja, sedangkan format yang lebih besar menyediakan lebih banyak tombol khusus. Pertimbangkan alur kerja dan kebiasaan mengetikmu.',
+      },
+      {
+        title: '2. Pilih kit atau prebuilt',
+        text:
+          'Keyboard kit memberi ruang untuk memilih komponen dan merakit setup sendiri. Prebuilt adalah pilihan siap pakai pada katalog demo ini. Periksa isi paket dan kebutuhan perakitan sebelum memesan.',
+      },
+      {
+        title: '3. Cari karakter switch',
+        text:
+          'Switch linear terasa bergerak tanpa tonjolan tactile, sementara switch tactile memiliki umpan balik yang terasa saat ditekan. Preferensi suara dan rasa berbeda untuk tiap orang; bila memungkinkan, cobalah dahulu.',
+      },
+      {
+        title: '4. Periksa kompatibilitas keycaps',
+        text:
+          'Cocokkan layout, ukuran tombol khusus, dan dukungan set keycaps dengan keyboard yang dipilih. Jumlah tombol saja tidak selalu memastikan kecocokan.',
+      },
+      {
+        title: '5. Bandingkan dengan kebutuhanmu',
+        text:
+          'Gunakan filter harga dan stok, simpan pilihan ke wishlist, atau bandingkan hingga tiga produk. Informasi katalog ini masih data demo dan perlu dikonfirmasi sebelum transaksi.',
+      },
+    ],
+  },
+  faq: {
+    title: 'Pertanyaan yang sering diajukan',
+    intro: 'Informasi berikut menjelaskan cara kerja demo Ramy Keys saat ini.',
+    questions: [
+      {
+        question: 'Apakah katalog ini menjual produk nyata?',
+        answer:
+          'Belum. Produk, harga, stok, dan gambar adalah contoh untuk demo; katalog ini tidak menjamin ketersediaan barang.',
+      },
+      {
+        question: 'Apa yang terjadi saat saya menekan Pesan via WhatsApp?',
+        answer:
+          'Aplikasi membuka WhatsApp dengan pesan produk yang sudah disiapkan. Nomor yang terpasang saat ini adalah nomor dummy, jadi jangan gunakan untuk pemesanan nyata.',
+      },
+      {
+        question: 'Apakah harga dan stok selalu terbaru?',
+        answer:
+          'Tidak. Data disimpan lokal di browser dan tidak disinkronkan dengan inventaris atau sistem backend.',
+      },
+      {
+        question: 'Apakah wishlist dan perbandingan tersimpan?',
+        answer:
+          'Ya, daftar produk tersimpan di localStorage pada browser dan origin yang sama. Data tidak berpindah otomatis ke browser atau perangkat lain.',
+      },
+      {
+        question: 'Apakah dashboard hanya bisa diakses pemilik?',
+        answer:
+          'Tidak. Dashboard ini tidak memiliki autentikasi dan bukan alat administrasi aman untuk data bisnis.',
+      },
+    ],
+  },
+  about: {
+    title: 'Tentang Ramy Keys',
+    intro:
+      'Ramy Keys adalah konsep katalog untuk menjelajahi mechanical keyboard dan aksesori dalam satu tempat.',
+    sections: [
+      {
+        title: 'Fokus pada pilihan yang jelas',
+        text:
+          'Katalog demo mengelompokkan keyboard kit, prebuilt keyboard, switch, keycaps, dan aksesori agar pengunjung dapat menyaring dan membandingkan pilihan.',
+      },
+      {
+        title: 'Transparan sebagai demo',
+        text:
+          'Data produk yang tampil bersifat fiktif. Wishlist, perbandingan, dan perubahan dashboard disimpan di browser; belum ada layanan akun, inventaris bersama, atau pemrosesan transaksi.',
+      },
+      {
+        title: 'Masih dalam pengembangan',
+        text:
+          'Panduan dan halaman informasi ini membantu mengeksplorasi prototipe. Detail produk nyata, kebijakan pengiriman, dan dukungan pelanggan belum tersedia di aplikasi.',
+      },
+    ],
+  },
+};
+
 export function formatRupiah(value) {
   return currencyFormatter.format(Number.isFinite(value) ? value : 0);
 }
@@ -68,7 +158,43 @@ function navLink(label, wideLabel, href, active) {
   return link;
 }
 
-function renderHeader(page) {
+function renderPageMenu(page, wishlistCount, comparisonCount) {
+  const entries = [
+    { page: 'guide', label: 'Panduan', href: '#/panduan' },
+    { page: 'faq', label: 'FAQ', href: '#/faq' },
+    { page: 'about', label: 'Tentang', href: '#/tentang' },
+    {
+      page: 'wishlist',
+      label: `Wishlist (${wishlistCount})`,
+      href: '#/wishlist',
+    },
+    {
+      page: 'comparison',
+      label: `Bandingkan (${comparisonCount}/${MAX_COMPARISON_PRODUCTS})`,
+      href: '#/perbandingan',
+    },
+  ];
+  const menu = el('details', 'navbar__menu');
+  const active = entries.some((entry) => entry.page === page);
+  const summary = el('summary', 'navbar__link navbar__menu-trigger');
+  summary.setAttribute('aria-label', 'Menu halaman lainnya');
+  appendIconLabel(summary, 'fa-solid fa-ellipsis', 'Lainnya');
+  if (active) summary.classList.add('is-active');
+
+  const panel = el('div', 'navbar__menu-panel');
+  for (const entry of entries) {
+    const link = el('a', 'navbar__menu-link', entry.label);
+    link.href = entry.href;
+    if (entry.page === page) {
+      link.setAttribute('aria-current', 'page');
+    }
+    panel.append(link);
+  }
+  menu.append(summary, panel);
+  return menu;
+}
+
+function renderHeader(page, wishlistCount, comparisonCount) {
   const header = el('header', 'site-header');
   const ribbon = el('div', 'site-ribbon');
   const ribbonInner = el('div', 'container site-ribbon__inner');
@@ -92,8 +218,9 @@ function renderHeader(page) {
 
   const links = el('div', 'navbar__links');
   links.append(
-    navLink('Katalog', null, '#/', page === 'catalog'),
+    navLink('Katalog', null, '#/', page === 'catalog' || page === 'product'),
     navLink('Dashboard', 'Dashboard Demo', '#/dashboard', page === 'dashboard'),
+    renderPageMenu(page, wishlistCount, comparisonCount),
   );
 
   const cta = el('a', 'navbar__cta');
@@ -191,7 +318,107 @@ function createBadge(text, variant) {
   return badge;
 }
 
-function createProductCard(product) {
+function productDetailHref(product) {
+  return `#/produk/${encodeURIComponent(product.id)}`;
+}
+
+function createProductImage(product, className, loading) {
+  const image = el('img', className);
+  const imageCandidates = getProductImageCandidates(product).map(assetUrl);
+  let imageIndex = 0;
+  image.alt = product.nama;
+  image.width = 800;
+  image.height = 600;
+  image.loading = loading;
+  image.addEventListener('error', () => {
+    imageIndex += 1;
+    if (imageIndex < imageCandidates.length) image.src = imageCandidates[imageIndex];
+  });
+  image.src = imageCandidates[imageIndex];
+  return image;
+}
+
+function createOrderAction(product, className) {
+  if (product.stok > 0) {
+    const link = el('a', className);
+    appendIconLabel(link, 'fa-brands fa-whatsapp', 'Pesan via WhatsApp');
+    link.href = buildWhatsAppUrl(WA_NUMBER, product);
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.setAttribute('aria-label', `Pesan ${product.nama} via WhatsApp`);
+    return link;
+  }
+
+  const button = el('button', className, 'Stok habis');
+  button.type = 'button';
+  button.disabled = true;
+  return button;
+}
+
+function createSelectionButton(product, ids, settings) {
+  const selected = ids.includes(product.id);
+  const atLimit =
+    settings.kind === 'comparison' &&
+    !selected &&
+    ids.length >= MAX_COMPARISON_PRODUCTS;
+  const button = el(
+    'button',
+    `product-tool${selected ? ' is-selected' : ''}`,
+  );
+  button.type = 'button';
+  button.disabled = atLimit;
+  button.setAttribute('aria-pressed', String(selected));
+  if (atLimit) button.title = `Maksimal ${MAX_COMPARISON_PRODUCTS} produk.`;
+  appendIconLabel(
+    button,
+    selected ? settings.selectedIcon : settings.icon,
+    atLimit ? 'Batas 3 produk' : selected ? settings.selectedLabel : settings.label,
+  );
+  button.addEventListener('click', () => {
+    const nextIds = selected
+      ? ids.filter((id) => id !== product.id)
+      : [...ids, product.id];
+    const result = settings.onChange(nextIds);
+    if (!result.ok) {
+      settings.onRefresh({
+        message: settings.errorMessage,
+        type: 'error',
+      });
+      return;
+    }
+    settings.onRefresh();
+  });
+  return button;
+}
+
+function createProductSelectionControls(product, state) {
+  const controls = el('div', 'product-tools');
+  controls.append(
+    createSelectionButton(product, state.wishlistIds, {
+      kind: 'wishlist',
+      icon: 'fa-regular fa-heart',
+      selectedIcon: 'fa-solid fa-heart',
+      label: 'Simpan',
+      selectedLabel: 'Tersimpan',
+      onChange: state.onWishlistChange,
+      onRefresh: state.onRefresh,
+      errorMessage: 'Wishlist gagal disimpan di browser.',
+    }),
+    createSelectionButton(product, state.comparisonIds, {
+      kind: 'comparison',
+      icon: 'fa-solid fa-scale-balanced',
+      selectedIcon: 'fa-solid fa-scale-balanced',
+      label: 'Bandingkan',
+      selectedLabel: 'Dipilih',
+      onChange: state.onComparisonChange,
+      onRefresh: state.onRefresh,
+      errorMessage: 'Daftar perbandingan gagal disimpan di browser.',
+    }),
+  );
+  return controls;
+}
+
+function createProductCard(product, state) {
   const card = el('article', 'card');
   const media = el('div', 'card__media');
   const badges = el('div', 'card__badges');
@@ -199,20 +426,7 @@ function createProductCard(product) {
   if (product.unggulan) badges.append(createBadge('Unggulan', 'featured'));
   if (product.stok === 0) badges.append(createBadge('Habis', 'out'));
 
-  const image = el('img', 'card__image');
-  const imageCandidates = getProductImageCandidates(product).map(assetUrl);
-  let imageIndex = 0;
-  image.alt = product.nama;
-  image.width = 800;
-  image.height = 600;
-  image.loading = 'lazy';
-  image.addEventListener('error', () => {
-    imageIndex += 1;
-    if (imageIndex < imageCandidates.length) image.src = imageCandidates[imageIndex];
-  });
-  image.src = imageCandidates[imageIndex];
-
-  media.append(image, badges);
+  media.append(createProductImage(product, 'card__image', 'lazy'), badges);
 
   const body = el('div', 'card__body');
   body.append(
@@ -220,6 +434,12 @@ function createProductCard(product) {
     el('h3', 'card__title', product.nama),
     el('p', 'card__price', formatRupiah(product.harga)),
   );
+  body.append(createProductSelectionControls(product, state));
+  const detailLink = el('a', 'card__detail-link');
+  appendIconLabel(detailLink, 'fa-solid fa-arrow-right', 'Lihat detail');
+  detailLink.href = productDetailHref(product);
+  detailLink.setAttribute('aria-label', `Lihat detail ${product.nama}`);
+  body.append(detailLink);
 
   let stockText = `Stok: ${product.stok}`;
   let stockClass = 'card__stock';
@@ -230,24 +450,97 @@ function createProductCard(product) {
     stockClass += ' card__stock--low';
   }
   body.append(el('p', stockClass, stockText));
-
-  if (product.stok > 0) {
-    const link = el('a', 'btn btn--wa card__action');
-    appendIconLabel(link, 'fa-brands fa-whatsapp', 'Pesan via WhatsApp');
-    link.href = buildWhatsAppUrl(WA_NUMBER, product);
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.setAttribute('aria-label', `Pesan ${product.nama} via WhatsApp`);
-    body.append(link);
-  } else {
-    const button = el('button', 'btn btn--wa card__action', 'Stok habis');
-    button.type = 'button';
-    button.disabled = true;
-    body.append(button);
-  }
+  body.append(createOrderAction(product, 'btn btn--wa card__action'));
 
   card.append(media, body);
   return card;
+}
+
+function renderProductDetail(product, allProducts, state) {
+  const section = el('section', 'product-detail container');
+  const backLink = el('a', 'product-detail__back');
+  appendIconLabel(backLink, 'fa-solid fa-arrow-left', 'Kembali ke katalog');
+  backLink.href = '#/';
+  section.append(backLink);
+
+  if (!product) {
+    const empty = el('div', 'empty-state');
+    empty.append(
+      el('h1', 'empty-state__title', 'Produk tidak ditemukan.'),
+      el('p', 'empty-state__text', 'Produk mungkin sudah dihapus dari katalog.'),
+    );
+    const catalogLink = el('a', 'btn btn--primary', 'Kembali ke katalog');
+    catalogLink.href = '#/';
+    empty.append(catalogLink);
+    section.append(empty);
+    return section;
+  }
+
+  const layout = el('div', 'product-detail__layout');
+  const media = el('div', 'product-detail__media');
+  media.append(createProductImage(product, 'product-detail__image', 'eager'));
+
+  const content = el('article', 'product-detail__content');
+  content.append(
+    el('p', 'product-detail__category', product.kategori),
+    el('h1', 'product-detail__title', product.nama),
+    el(
+      'p',
+      'product-detail__description',
+      product.deskripsi || 'Deskripsi produk belum tersedia.',
+    ),
+    el('p', 'product-detail__price', formatRupiah(product.harga)),
+  );
+
+  let stockText = `Stok: ${product.stok}`;
+  let stockLabel = 'Tersedia';
+  let stockClass = 'product-detail__stock';
+  if (product.stok === 0) {
+    stockText = 'Stok habis';
+    stockLabel = 'Habis';
+    stockClass += ' product-detail__stock--out';
+  } else if (product.stok <= LOW_STOCK) {
+    stockText = `Stok terbatas · ${product.stok} tersisa`;
+    stockLabel = 'Terbatas';
+    stockClass += ' product-detail__stock--low';
+  }
+  const facts = el('dl', 'product-detail__facts');
+  for (const [label, value] of [
+    ['Kategori', product.kategori],
+    ['Ketersediaan', stockLabel],
+    ['Kurasi', product.unggulan ? 'Produk unggulan' : 'Koleksi'],
+  ]) {
+    const fact = el('div', 'product-detail__fact');
+    fact.append(el('dt', null, label), el('dd', null, value));
+    facts.append(fact);
+  }
+  content.append(facts, el('p', stockClass, stockText));
+
+  const actions = el('div', 'product-detail__actions');
+  actions.append(
+    createProductSelectionControls(product, state),
+    createOrderAction(product, 'btn btn--wa'),
+  );
+  content.append(actions);
+  layout.append(media, content);
+  section.append(layout);
+
+  const relatedProducts = allProducts.filter(
+    (item) => item.id !== product.id && item.kategori === product.kategori,
+  );
+  if (relatedProducts.length > 0) {
+    const related = el('section', 'product-detail__related');
+    related.append(
+      el('h2', 'product-detail__related-title', `Pilihan lain · ${product.kategori}`),
+    );
+    const grid = el('div', 'product-grid');
+    for (const relatedProduct of relatedProducts) {
+      grid.append(createProductCard(relatedProduct, state));
+    }
+    related.append(grid);
+    section.append(related);
+  }
+  return section;
 }
 
 function renderEmptyCatalog() {
@@ -279,10 +572,10 @@ function renderEmptyResults() {
   return empty;
 }
 
-function renderCatalog(products) {
+function renderCatalog(products, state) {
   const section = el('section', 'section container');
   section.id = 'katalog';
-  const filters = { search: '', category: 'all', sort: 'default' };
+  const filters = { ...state.catalogFilters };
 
   const head = el('div', 'section__head');
   head.append(
@@ -300,6 +593,7 @@ function renderCatalog(products) {
   const searchInput = el('input', 'catalog-toolbar__control');
   searchInput.type = 'search';
   searchInput.placeholder = 'Cari nama, kategori, atau deskripsi…';
+  searchInput.value = filters.search;
   searchField.append(searchInput);
 
   const categoryField = el('label', 'catalog-toolbar__field');
@@ -309,7 +603,19 @@ function renderCatalog(products) {
   for (const category of CATEGORIES) {
     categorySelect.append(createOption(category, category));
   }
+  categorySelect.value = filters.category;
   categoryField.append(categorySelect);
+
+  const stockField = el('label', 'catalog-toolbar__field');
+  stockField.append(el('span', 'catalog-toolbar__label', 'Ketersediaan'));
+  const stockSelect = el('select', 'catalog-toolbar__control');
+  stockSelect.append(
+    createOption('all', 'Semua stok'),
+    createOption('available', 'Tersedia'),
+    createOption('out', 'Stok habis'),
+  );
+  stockSelect.value = filters.stock;
+  stockField.append(stockSelect);
 
   const sortField = el('label', 'catalog-toolbar__field');
   sortField.append(el('span', 'catalog-toolbar__label', 'Urutkan'));
@@ -320,11 +626,53 @@ function renderCatalog(products) {
     createOption('price-desc', 'Harga termahal'),
     createOption('name-asc', 'Nama A–Z'),
   );
+  sortSelect.value = filters.sort;
   sortField.append(sortSelect);
+
+  const minPriceField = el('label', 'catalog-toolbar__field');
+  minPriceField.append(el('span', 'catalog-toolbar__label', 'Harga minimum (Rp)'));
+  const minPriceInput = el('input', 'catalog-toolbar__control');
+  minPriceInput.type = 'number';
+  minPriceInput.min = '0';
+  minPriceInput.step = '1';
+  minPriceInput.inputMode = 'numeric';
+  minPriceInput.placeholder = 'Tanpa batas';
+  minPriceInput.value = filters.minPrice;
+  minPriceField.append(minPriceInput);
+
+  const maxPriceField = el('label', 'catalog-toolbar__field');
+  maxPriceField.append(el('span', 'catalog-toolbar__label', 'Harga maksimum (Rp)'));
+  const maxPriceInput = el('input', 'catalog-toolbar__control');
+  maxPriceInput.type = 'number';
+  maxPriceInput.min = '0';
+  maxPriceInput.step = '1';
+  maxPriceInput.inputMode = 'numeric';
+  maxPriceInput.placeholder = 'Tanpa batas';
+  maxPriceInput.value = filters.maxPrice;
+  maxPriceField.append(maxPriceInput);
+
+  const featuredField = el('label', 'catalog-toolbar__field');
+  featuredField.append(el('span', 'catalog-toolbar__label', 'Pilihan'));
+  const featuredSelect = el('select', 'catalog-toolbar__control');
+  featuredSelect.append(
+    createOption('all', 'Semua produk'),
+    createOption('featured', 'Produk unggulan'),
+  );
+  featuredSelect.value = filters.featured ? 'featured' : 'all';
+  featuredField.append(featuredSelect);
 
   const resetButton = el('button', 'btn btn--secondary catalog-toolbar__reset', 'Reset filter');
   resetButton.type = 'button';
-  toolbar.append(searchField, categoryField, sortField, resetButton);
+  toolbar.append(
+    searchField,
+    categoryField,
+    stockField,
+    sortField,
+    minPriceField,
+    maxPriceField,
+    featuredField,
+    resetButton,
+  );
 
   const status = el('p', 'section__meta catalog-results__status');
   status.setAttribute('role', 'status');
@@ -332,6 +680,7 @@ function renderCatalog(products) {
   const results = el('div', 'catalog-results');
 
   function updateResults() {
+    state.onCatalogFiltersChange(filters);
     const visibleProducts = filterProducts(products, filters);
     status.textContent = `Menampilkan ${visibleProducts.length} dari ${products.length} produk`;
     results.replaceChildren();
@@ -348,7 +697,7 @@ function renderCatalog(products) {
 
     const grid = el('div', 'product-grid');
     for (const product of visibleProducts) {
-      grid.append(createProductCard(product));
+      grid.append(createProductCard(product, state));
     }
     results.append(grid);
   }
@@ -361,17 +710,43 @@ function renderCatalog(products) {
     filters.category = categorySelect.value;
     updateResults();
   });
+  stockSelect.addEventListener('change', () => {
+    filters.stock = stockSelect.value;
+    updateResults();
+  });
   sortSelect.addEventListener('change', () => {
     filters.sort = sortSelect.value;
     updateResults();
   });
+  minPriceInput.addEventListener('input', () => {
+    filters.minPrice = minPriceInput.value;
+    updateResults();
+  });
+  maxPriceInput.addEventListener('input', () => {
+    filters.maxPrice = maxPriceInput.value;
+    updateResults();
+  });
+  featuredSelect.addEventListener('change', () => {
+    filters.featured = featuredSelect.value === 'featured';
+    updateResults();
+  });
   resetButton.addEventListener('click', () => {
-    filters.search = '';
-    filters.category = 'all';
-    filters.sort = 'default';
+    Object.assign(filters, {
+      search: '',
+      category: 'all',
+      stock: 'all',
+      sort: 'default',
+      minPrice: '',
+      maxPrice: '',
+      featured: false,
+    });
     searchInput.value = '';
     categorySelect.value = 'all';
+    stockSelect.value = 'all';
     sortSelect.value = 'default';
+    minPriceInput.value = '';
+    maxPriceInput.value = '';
+    featuredSelect.value = 'all';
     updateResults();
   });
 
@@ -383,6 +758,194 @@ function renderCatalog(products) {
     results,
   );
   updateResults();
+  return section;
+}
+
+function renderWishlistPage(products, state) {
+  const savedProducts = products.filter((product) =>
+    state.wishlistIds.includes(product.id),
+  );
+  const section = el('section', 'collection-page container');
+  section.append(
+    el('p', 'page-eyebrow', 'KOLEKSI PRIBADI · BROWSER INI'),
+    el('h1', 'page-title', 'Wishlist'),
+    el(
+      'p',
+      'collection-page__intro',
+      `${savedProducts.length} produk tersimpan. Wishlist hanya tersedia di browser ini.`,
+    ),
+  );
+
+  if (savedProducts.length === 0) {
+    const empty = el('div', 'empty-state');
+    empty.append(
+      el('h2', 'empty-state__title', 'Wishlist masih kosong.'),
+      el(
+        'p',
+        'empty-state__text',
+        'Simpan produk dari kartu katalog atau halaman detail untuk menemukannya lagi.',
+      ),
+    );
+    const link = el('a', 'btn btn--primary', 'Jelajahi katalog');
+    link.href = '#/';
+    empty.append(link);
+    section.append(empty);
+    return section;
+  }
+
+  const grid = el('div', 'product-grid');
+  for (const product of savedProducts) {
+    grid.append(createProductCard(product, state));
+  }
+  section.append(grid);
+  return section;
+}
+
+function renderComparisonPage(products, state) {
+  const selectedProducts = state.comparisonIds
+    .map((id) => products.find((product) => product.id === id))
+    .filter(Boolean);
+  const section = el('section', 'collection-page container');
+  section.append(
+    el('p', 'page-eyebrow', 'BANDINGKAN PILIHAN'),
+    el('h1', 'page-title', 'Perbandingan produk'),
+    el(
+      'p',
+      'collection-page__intro',
+      `Pilih hingga ${MAX_COMPARISON_PRODUCTS} produk untuk membandingkan kategori, harga, stok, dan deskripsi.`,
+    ),
+  );
+
+  if (selectedProducts.length === 0) {
+    const empty = el('div', 'empty-state');
+    empty.append(
+      el('h2', 'empty-state__title', 'Belum ada produk untuk dibandingkan.'),
+      el(
+        'p',
+        'empty-state__text',
+        'Tambahkan produk ke perbandingan dari kartu katalog atau halaman detail.',
+      ),
+    );
+    const link = el('a', 'btn btn--primary', 'Jelajahi katalog');
+    link.href = '#/';
+    empty.append(link);
+    section.append(empty);
+    return section;
+  }
+
+  if (selectedProducts.length === 1) {
+    section.append(
+      el(
+        'p',
+        'comparison-page__hint',
+        'Tambahkan satu produk lagi untuk membandingkan pilihan secara berdampingan.',
+      ),
+    );
+  }
+
+  const actions = el('div', 'comparison-page__actions');
+  const clearButton = el('button', 'btn btn--secondary', 'Kosongkan perbandingan');
+  clearButton.type = 'button';
+  clearButton.addEventListener('click', () => {
+    const result = state.onComparisonChange([]);
+    if (!result.ok) {
+      state.onRefresh({
+        message: 'Daftar perbandingan gagal disimpan di browser.',
+        type: 'error',
+      });
+      return;
+    }
+    state.onRefresh();
+  });
+  actions.append(clearButton);
+
+  const grid = el('div', 'comparison-grid');
+  for (const product of selectedProducts) {
+    const card = el('article', 'comparison-card');
+    const media = el('div', 'comparison-card__media');
+    media.append(createProductImage(product, 'comparison-card__image', 'lazy'));
+
+    const content = el('div', 'comparison-card__content');
+    content.append(
+      el('p', 'product-detail__category', product.kategori),
+      el('h2', 'comparison-card__title', product.nama),
+      el('p', 'comparison-card__price', formatRupiah(product.harga)),
+      el(
+        'p',
+        product.stok > 0
+          ? 'comparison-card__stock'
+          : 'comparison-card__stock comparison-card__stock--out',
+        product.stok > 0 ? `Stok: ${product.stok}` : 'Stok habis',
+      ),
+      el(
+        'p',
+        'comparison-card__description',
+        product.deskripsi || 'Deskripsi produk belum tersedia.',
+      ),
+    );
+    const detailLink = el('a', 'card__detail-link');
+    appendIconLabel(detailLink, 'fa-solid fa-arrow-right', 'Lihat detail');
+    detailLink.href = productDetailHref(product);
+    content.append(detailLink);
+
+    const removeButton = el('button', 'btn btn--secondary comparison-card__remove');
+    appendIconLabel(removeButton, 'fa-solid fa-xmark', 'Hapus dari daftar');
+    removeButton.type = 'button';
+    removeButton.addEventListener('click', () => {
+      const nextIds = state.comparisonIds.filter((id) => id !== product.id);
+      const result = state.onComparisonChange(nextIds);
+      if (!result.ok) {
+        state.onRefresh({
+          message: 'Daftar perbandingan gagal disimpan di browser.',
+          type: 'error',
+        });
+        return;
+      }
+      state.onRefresh();
+    });
+    card.append(media, content, removeButton);
+    grid.append(card);
+  }
+  section.append(actions, grid);
+  return section;
+}
+
+function renderInfoPage(page) {
+  const content = INFO_PAGES[page];
+  const section = el('section', 'info-page container');
+  const header = el('div', 'info-page__header');
+  header.append(
+    el('p', 'page-eyebrow', page === 'guide' ? 'PANDUAN' : page === 'faq' ? 'BANTUAN' : 'RAMY KEYS'),
+    el('h1', 'page-title', content.title),
+    el('p', 'info-page__intro', content.intro),
+  );
+  section.append(header);
+
+  const entries = page === 'faq' ? content.questions : content.sections;
+  const list = el('div', page === 'faq' ? 'faq-list' : 'info-card-grid');
+  for (const entry of entries) {
+    if (page === 'faq') {
+      const item = el('details', 'faq-item');
+      item.append(
+        el('summary', 'faq-item__question', entry.question),
+        el('p', 'faq-item__answer', entry.answer),
+      );
+      list.append(item);
+      continue;
+    }
+
+    const card = el('article', 'info-card');
+    card.append(
+      el('h2', 'info-card__title', entry.title),
+      el('p', 'info-card__text', entry.text),
+    );
+    list.append(card);
+  }
+  section.append(list);
+
+  const catalogLink = el('a', 'btn btn--primary info-page__cta', 'Jelajahi katalog');
+  catalogLink.href = '#/';
+  section.append(catalogLink);
   return section;
 }
 
@@ -953,10 +1516,24 @@ function renderFooter() {
   );
   const footerMeta = el('p', 'site-footer__meta');
   appendIconLabel(footerMeta, 'fa-brands fa-whatsapp', 'PESAN VIA WHATSAPP · RAMY KEYS');
+  const footerLinks = el('nav', 'site-footer__links');
+  footerLinks.setAttribute('aria-label', 'Halaman Ramy Keys');
+  for (const [label, href] of [
+    ['Panduan', '#/panduan'],
+    ['FAQ', '#/faq'],
+    ['Tentang', '#/tentang'],
+    ['Wishlist', '#/wishlist'],
+    ['Perbandingan', '#/perbandingan'],
+  ]) {
+    const link = el('a', 'site-footer__link', label);
+    link.href = href;
+    footerLinks.append(link);
+  }
   footerInner.append(
     footerBrand,
     footerCopy,
     footerMeta,
+    footerLinks,
   );
   return footer;
 }
@@ -984,10 +1561,17 @@ export function renderApp(
   root,
   {
     page,
+    productId,
     products,
+    wishlistIds,
+    comparisonIds,
+    catalogFilters,
     notice,
     onDismissNotice,
     onProductsChange,
+    onWishlistChange,
+    onComparisonChange,
+    onCatalogFiltersChange,
     onRefresh,
   },
 ) {
@@ -996,20 +1580,54 @@ export function renderApp(
   const main = el('main', 'site-main');
   main.id = 'main';
   main.tabIndex = -1;
+  const detailProduct =
+    page === 'product' ? products.find((product) => product.id === productId) : null;
+  const productIds = new Set(products.map((product) => product.id));
+  const validWishlistIds = wishlistIds.filter((id) => productIds.has(id));
+  const validComparisonIds = comparisonIds
+    .filter((id) => productIds.has(id))
+    .slice(0, MAX_COMPARISON_PRODUCTS);
+  const state = {
+    wishlistIds: validWishlistIds,
+    comparisonIds: validComparisonIds,
+    catalogFilters,
+    onWishlistChange,
+    onComparisonChange,
+    onCatalogFiltersChange,
+    onRefresh,
+  };
+  const wishlistCount = validWishlistIds.length;
+  const comparisonCount = validComparisonIds.length;
 
   if (page === 'dashboard') {
     main.append(renderDashboard(products, onProductsChange, onRefresh));
+  } else if (page === 'product') {
+    main.append(renderProductDetail(detailProduct, products, state));
+  } else if (page === 'wishlist') {
+    main.append(renderWishlistPage(products, state));
+  } else if (page === 'comparison') {
+    main.append(renderComparisonPage(products, state));
+  } else if (Object.prototype.hasOwnProperty.call(INFO_PAGES, page)) {
+    main.append(renderInfoPage(page));
   } else {
-    main.append(renderHero(products), renderCatalog(products));
+    main.append(renderHero(products), renderCatalog(products, state));
   }
 
-  root.append(renderHeader(page));
+  root.append(renderHeader(page, wishlistCount, comparisonCount));
   const notification = renderNotice(notice, onDismissNotice);
   if (notification) root.append(notification);
   root.append(main, renderFooter());
 
+  const pageTitles = {
+    dashboard: 'Dashboard Demo — Ramy Keys',
+    guide: 'Panduan — Ramy Keys',
+    faq: 'FAQ — Ramy Keys',
+    about: 'Tentang — Ramy Keys',
+    wishlist: 'Wishlist — Ramy Keys',
+    comparison: 'Perbandingan — Ramy Keys',
+  };
   document.title =
-    page === 'dashboard'
-      ? 'Dashboard Demo — Ramy Keys'
-      : 'Katalog — Ramy Keys';
+    page === 'product'
+      ? `${detailProduct ? detailProduct.nama : 'Produk tidak ditemukan'} — Ramy Keys`
+      : pageTitles[page] || 'Katalog — Ramy Keys';
 }
