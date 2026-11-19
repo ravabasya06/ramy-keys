@@ -3,7 +3,13 @@
  * Tidak ada data pengguna yang dimasukkan lewat innerHTML.
  */
 
-import { LOW_STOCK, WA_NUMBER } from './products.js';
+import {
+  CATEGORIES,
+  buildWhatsAppUrl,
+  filterProducts,
+  LOW_STOCK,
+  WA_NUMBER,
+} from './products.js';
 import { summarize } from './store.js';
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
@@ -26,11 +32,6 @@ function el(tag, className, text) {
 function assetUrl(path) {
   const clean = String(path || '/images/placeholder-default.svg').replace(/^\/+/, '');
   return `${import.meta.env.BASE_URL}${clean}`;
-}
-
-function whatsAppUrl(product) {
-  const message = `Halo Ramy Keys, saya ingin memesan: ${product.nama} (${formatRupiah(product.harga)}). Apakah masih tersedia?`;
-  return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
 function navLink(label, wideLabel, href, active) {
@@ -83,6 +84,7 @@ function renderHero(products) {
   const copy = el('div', 'hero__copy');
 
   copy.append(
+    el('p', 'hero__eyebrow', 'Ramy Keys · Keyboard & aksesori'),
     el(
       'h1',
       'hero__title',
@@ -106,9 +108,35 @@ function renderHero(products) {
     ),
   );
 
-  inner.append(copy);
+  inner.append(copy, renderKeyboardIllustration());
   hero.append(inner);
   return hero;
+}
+
+function renderKeyboardIllustration() {
+  const illustration = el('div', 'keyboard-illustration');
+  illustration.setAttribute('aria-hidden', 'true');
+
+  const board = el('div', 'keyboard-illustration__board');
+  const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+
+  for (const [rowIndex, letters] of rows.entries()) {
+    const row = el('div', `keyboard-illustration__row keyboard-illustration__row--${rowIndex + 1}`);
+    for (const letter of letters) {
+      row.append(el('span', 'keyboard-illustration__key', letter));
+    }
+    board.append(row);
+  }
+
+  const bottomRow = el('div', 'keyboard-illustration__row');
+  bottomRow.append(
+    el('span', 'keyboard-illustration__key keyboard-illustration__key--wide', 'CTRL'),
+    el('span', 'keyboard-illustration__key keyboard-illustration__key--space', 'SPACE'),
+    el('span', 'keyboard-illustration__key keyboard-illustration__key--wide', 'FN'),
+  );
+  board.append(bottomRow);
+  illustration.append(board);
+  return illustration;
 }
 
 function createBadge(text, variant) {
@@ -158,7 +186,7 @@ function createProductCard(product) {
 
   if (product.stok > 0) {
     const link = el('a', 'btn btn--wa card__action', 'Pesan via WhatsApp');
-    link.href = whatsAppUrl(product);
+    link.href = buildWhatsAppUrl(WA_NUMBER, product);
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.setAttribute('aria-label', `Pesan ${product.nama} via WhatsApp`);
@@ -190,32 +218,146 @@ function renderEmptyCatalog() {
   return empty;
 }
 
+function renderEmptyResults() {
+  const empty = el('div', 'empty-state');
+  empty.append(
+    el('h3', 'empty-state__title', 'Tidak ada produk yang cocok.'),
+    el(
+      'p',
+      'empty-state__text',
+      'Coba kata kunci lain atau reset filter.',
+    ),
+  );
+  return empty;
+}
+
 function renderCatalog(products) {
   const section = el('section', 'section container');
   section.id = 'katalog';
+  const filters = { search: '', category: 'all', sort: 'default' };
 
   const head = el('div', 'section__head');
   head.append(
     el('h2', 'section__title', 'Produk Ramy Keys'),
-    el(
-      'p',
-      'section__meta',
-      `Menampilkan ${products.length} dari ${products.length} produk`,
-    ),
   );
-  section.append(head);
 
-  if (products.length === 0) {
-    section.append(renderEmptyCatalog());
-    return section;
+  const toolbar = el('div', 'catalog-toolbar');
+  const searchField = el('label', 'catalog-toolbar__field catalog-toolbar__field--search');
+  searchField.append(el('span', 'catalog-toolbar__label', 'Cari produk'));
+  const searchInput = el('input', 'catalog-toolbar__control');
+  searchInput.type = 'search';
+  searchInput.placeholder = 'Cari nama, kategori, atau deskripsi…';
+  searchField.append(searchInput);
+
+  const categoryField = el('label', 'catalog-toolbar__field');
+  categoryField.append(el('span', 'catalog-toolbar__label', 'Kategori'));
+  const categorySelect = el('select', 'catalog-toolbar__control');
+  categorySelect.append(createOption('all', 'Semua kategori'));
+  for (const category of CATEGORIES) {
+    categorySelect.append(createOption(category, category));
+  }
+  categoryField.append(categorySelect);
+
+  const sortField = el('label', 'catalog-toolbar__field');
+  sortField.append(el('span', 'catalog-toolbar__label', 'Urutkan'));
+  const sortSelect = el('select', 'catalog-toolbar__control');
+  sortSelect.append(
+    createOption('default', 'Default'),
+    createOption('price-asc', 'Harga termurah'),
+    createOption('price-desc', 'Harga termahal'),
+    createOption('name-asc', 'Nama A–Z'),
+  );
+  sortField.append(sortSelect);
+
+  const resetButton = el('button', 'btn btn--secondary catalog-toolbar__reset', 'Reset filter');
+  resetButton.type = 'button';
+  toolbar.append(searchField, categoryField, sortField, resetButton);
+
+  const status = el('p', 'section__meta catalog-results__status');
+  status.setAttribute('role', 'status');
+  status.setAttribute('aria-live', 'polite');
+  const results = el('div', 'catalog-results');
+
+  function updateResults() {
+    const visibleProducts = filterProducts(products, filters);
+    status.textContent = `Menampilkan ${visibleProducts.length} dari ${products.length} produk`;
+    results.replaceChildren();
+
+    if (products.length === 0) {
+      results.append(renderEmptyCatalog());
+      return;
+    }
+
+    if (visibleProducts.length === 0) {
+      results.append(renderEmptyResults());
+      return;
+    }
+
+    const grid = el('div', 'product-grid');
+    for (const product of visibleProducts) {
+      grid.append(createProductCard(product));
+    }
+    results.append(grid);
   }
 
-  const grid = el('div', 'product-grid');
-  for (const product of products) {
-    grid.append(createProductCard(product));
-  }
-  section.append(grid);
+  searchInput.addEventListener('input', () => {
+    filters.search = searchInput.value;
+    updateResults();
+  });
+  categorySelect.addEventListener('change', () => {
+    filters.category = categorySelect.value;
+    updateResults();
+  });
+  sortSelect.addEventListener('change', () => {
+    filters.sort = sortSelect.value;
+    updateResults();
+  });
+  resetButton.addEventListener('click', () => {
+    filters.search = '';
+    filters.category = 'all';
+    filters.sort = 'default';
+    searchInput.value = '';
+    categorySelect.value = 'all';
+    sortSelect.value = 'default';
+    updateResults();
+  });
+
+  section.append(
+    head,
+    toolbar,
+    renderCategoryOverview(products),
+    status,
+    results,
+  );
+  updateResults();
   return section;
+}
+
+function createOption(value, label) {
+  const option = el('option', null, label);
+  option.value = value;
+  return option;
+}
+
+function renderCategoryOverview(products) {
+  const overview = el('div', 'category-overview');
+  overview.append(el('h3', 'category-overview__title', 'Jelajahi kategori'));
+
+  const categories = el('ul', 'category-list');
+  categories.setAttribute('aria-label', 'Kategori produk');
+
+  for (const category of CATEGORIES) {
+    const count = products.filter((product) => product.kategori === category).length;
+    const item = el('li', 'category-chip');
+    item.append(
+      el('span', 'category-chip__name', category),
+      el('span', 'category-chip__count', `${count} produk`),
+    );
+    categories.append(item);
+  }
+
+  overview.append(categories);
+  return overview;
 }
 
 function renderSummaryCard(label, value, note) {

@@ -3,7 +3,7 @@ export const STORAGE_KEY = 'ramyKeys.products.v1';
 export const SCHEMA_VERSION = 1;
 export const LOW_STOCK = 5;
 
-// Nomor dummy; ganti sebelum aplikasi dipakai untuk toko sungguhan.
+// Konfigurasi nomor tujuan nonrahasia; ini nomor dummy untuk demo.
 export const WA_NUMBER = '6280000000000';
 
 export const CATEGORIES = [
@@ -96,3 +96,54 @@ export const PRODUCTS = [
     unggulan: false,
   },
 ];
+
+export function filterProducts(
+  products,
+  { search = '', category = 'all', sort = 'default' } = {},
+) {
+  const query = String(search ?? '')
+    .trim()
+    .toLocaleLowerCase('id');
+
+  const filtered = products.filter((product) => {
+    const matchesSearch =
+      !query ||
+      [product.nama, product.kategori, product.deskripsi].some((value) =>
+        String(value ?? '')
+          .toLocaleLowerCase('id')
+          .includes(query),
+      );
+    const matchesCategory = category === 'all' || product.kategori === category;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  switch (sort) {
+    case 'price-asc':
+      return filtered.sort((a, b) => a.harga - b.harga);
+    case 'price-desc':
+      return filtered.sort((a, b) => b.harga - a.harga);
+    case 'name-asc':
+      return filtered.sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
+    default:
+      return filtered;
+  }
+}
+
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  maximumFractionDigits: 0,
+});
+
+export function buildWhatsAppUrl(nomor, produk) {
+  if (typeof nomor !== 'string' || !/^\+?[1-9]\d{7,14}$/.test(nomor)) {
+    throw new TypeError('Nomor WhatsApp harus menggunakan format internasional E.164.');
+  }
+
+  const internationalNumber = nomor.replace(/^\+/, '');
+  const harga = currencyFormatter.format(produk.harga);
+  const pesan = `Halo Ramy Keys, saya ingin memesan: ${produk.nama} (${harga}). Apakah masih tersedia?`;
+
+  return `https://wa.me/${internationalNumber}?text=${encodeURIComponent(pesan)}`;
+}
